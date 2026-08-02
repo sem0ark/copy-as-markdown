@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Markdown Saver - Configuration Editor</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: monospace;
+      padding: 20px;
+      background: #1e1e1e;
+      color: #d4d4d4;
+    }
+    h1 { margin-bottom: 20px; font-size: 18px; }
+    #editor {
+      width: 100%;
+      min-height: 500px;
+      padding: 15px;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      background: #252526;
+      color: #d4d4d4;
+      border: 1px solid #3e3e42;
+      border-radius: 4px;
+    }
+    .buttons { margin-top: 15px; display: flex; gap: 10px; }
+    button {
+      padding: 8px 16px;
+      font-family: monospace;
+      font-size: 14px;
+      cursor: pointer;
+      border: 1px solid #3e3e42;
+      background: #333;
+      color: #d4d4d4;
+      border-radius: 4px;
+    }
+    button:hover { background: #444; }
+    button.primary { background: #0e639c; border-color: #0e639c; }
+    button.primary:hover { background: #1177bb; }
+    .status {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 4px;
+      display: none;
+    }
+    .status.success { background: #1e3a1e; color: #a5d6a7; display: block; }
+    .status.error { background: #3a1e1e; color: #ef5350; display: block; }
+    pre {
+      margin-top: 15px;
+      padding: 10px;
+      background: #252526;
+      border: 1px solid #3e3e42;
+      border-radius: 4px;
+      font-size: 12px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>Configuration Editor</h1>
+  <textarea id="editor" spellcheck="false"></textarea>
+  <div class="buttons">
+    <button class="primary" id="save">Save</button>
+    <button id="reload">Reload</button>
+    <button id="export">Export to File</button>
+    <button id="import">Import from File</button>
+  </div>
+  <div id="status" class="status"></div>
+  <pre id="help">
+Format:
+{
+  "profiles": {
+    "example.com": {
+      "domain": "example.com",
+      "root": {
+        "id": "root",
+        "selector": "article.main",
+        "action": "include",
+        "children": []
+      },
+      "updatedAt": 1234567890
+    }
+  }
+}
+
+Actions: "include" | "ignore" | "template"
+Template example: "> [!info] {{content}}"
+  </pre>
+  <input type="file" id="fileInput" style="display: none;" accept=".json">
+  <script src="config.js"></script>
+</body>
+</html>
