@@ -102,37 +102,3 @@ export class Highlighter {
     return this.isActive;
   }
 }
-
-/**
- * Gets the element under the cursor, excluding picker UI elements
- */
-export function getElementFromPoint(
-  x: number,
-  y: number,
-  excludeClassPrefix = "md-saver-",
-): Element | null {
-  // Hide all picker elements temporarily
-  const pickerElements = document.querySelectorAll(
-    `[class*="${excludeClassPrefix}"]`,
-  );
-  const originalDisplays = new Map<Element, string>();
-
-  for (const el of pickerElements) {
-    if (el instanceof HTMLElement) {
-      originalDisplays.set(el, el.style.display);
-      el.style.display = "none";
-    }
-  }
-
-  // Get element at point
-  const element = document.elementFromPoint(x, y);
-
-  // Restore displays
-  for (const [el, display] of originalDisplays) {
-    if (el instanceof HTMLElement) {
-      el.style.display = display;
-    }
-  }
-
-  return element;
-}

@@ -17,6 +17,126 @@ describe("processor", () => {
     global.document = document as any;
   });
 
+  describe("script tag stripping", () => {
+    it("should remove script tags and their content from include with no children", () => {
+      // Arrange
+      const html = `
+        <div>
+          <p>Before script</p>
+          <script>alert('should be removed');</script>
+          <p>After script</p>
+        </div>
+      `;
+      const element = createElementFromHtml(html);
+      const config: ExportNode = {
+        id: "div-include",
+        selector: "div",
+        action: "include",
+        children: [],
+      };
+
+      // Act
+      const result = processElement(element, config);
+
+      // Assert
+      expect(result).toContain("Before script");
+      expect(result).toContain("After script");
+      expect(result).not.toContain("alert");
+      expect(result).not.toContain("should be removed");
+    });
+
+    it("should remove inline script tags", () => {
+      // Arrange
+      const html = `
+        <article>
+          <h1>Title</h1>
+          <script type="text/javascript">console.log('test');</script>
+          <p>Content</p>
+        </article>
+      `;
+      const element = createElementFromHtml(html);
+      const config: ExportNode = {
+        id: "article-include",
+        selector: "article",
+        action: "include",
+        children: [],
+      };
+
+      // Act
+      const result = processElement(element, config);
+
+      // Assert
+      expect(result).toContain("Title");
+      expect(result).toContain("Content");
+      expect(result).not.toContain("console.log");
+      expect(result).not.toContain("<script");
+    });
+
+    it("should remove script tags when processing with child rules", () => {
+      // Arrange
+      const html = `
+        <div>
+          <h2>Section</h2>
+          <script src="external.js"></script>
+          <p class="content">Important text</p>
+          <script>var x = 1;</script>
+        </div>
+      `;
+      const element = createElementFromHtml(html);
+      const config: ExportNode = {
+        id: "div-with-rules",
+        selector: "div",
+        action: "include",
+        children: [
+          {
+            id: "content-para",
+            selector: ".content",
+            action: "template",
+            template: "**{{content}}**",
+            children: [],
+          },
+        ],
+      };
+
+      // Act
+      const result = processElement(element, config);
+
+      // Assert
+      expect(result).toContain("Section");
+      expect(result).toContain("**Important text**");
+      expect(result).not.toContain("external.js");
+      expect(result).not.toContain("var x = 1");
+      expect(result).not.toContain("<script");
+    });
+
+    it("should handle nested script tags", () => {
+      // Arrange
+      const html = `
+        <div>
+          <div>
+            <script>nested();</script>
+            <p>Text</p>
+          </div>
+        </div>
+      `;
+      const element = createElementFromHtml(html);
+      const config: ExportNode = {
+        id: "outer-div",
+        selector: "div",
+        action: "include",
+        children: [],
+      };
+
+      // Act
+      const result = processElement(element, config);
+
+      // Assert
+      expect(result).toContain("Text");
+      expect(result).not.toContain("nested");
+      expect(result).not.toContain("<script");
+    });
+  });
+
   describe("processElement - ignore action", () => {
     it("should return empty string when action is ignore", () => {
       // Arrange
@@ -454,6 +574,104 @@ describe("processor", () => {
       expect(result).toContain("Important note");
       expect(result).toContain("Paragraph 2");
       expect(result).not.toContain("Footer info");
+    });
+  });
+
+  describe("Iframe drilling", () => {
+    it("should process iframe content when drilling with >>> syntax", () => {
+      // Arrange
+      const html = `
+        <div>
+          <iframe id="content-frame"></iframe>
+        </div>
+      `;
+      const element = createElementFromHtml(html);
+      const iframe = element.querySelector("iframe") as HTMLIFrameElement;
+
+      // Mock iframe content
+      const iframeDoc = new JSDOM(
+        "<!DOCTYPE html><html><body><article><h1>Iframe Title</h1><p>Iframe content</p></article></body></html>",
+      ).window.document;
+      Object.defineProperty(iframe, "contentDocument", {
+        value: iframeDoc,
+        writable: false,
+      });
+
+      const config: ExportNode = {
+        id: "div-root",
+        selector: "div",
+        action: "include",
+        children: [
+          {
+            id: "iframe-content",
+            selector: "iframe#content-frame >>> article",
+            action: "include",
+            children: [],
+          },
+        ],
+      };
+
+      // Act
+      const result = processElement(element, config);
+
+      // Assert
+      expect(result).toContain("# Iframe Title");
+      expect(result).toContain("Iframe content");
+    });
+
+    it("should process direct iframe element", () => {
+      // Arrange
+      const html = '<iframe id="main-frame"></iframe>';
+      const element = createElementFromHtml(html);
+
+      // Mock iframe content
+      const iframeDoc = new JSDOM(
+        "<!DOCTYPE html><html><body><h1>Frame Title</h1><p>Frame content</p></body></html>",
+      ).window.document;
+      Object.defineProperty(element, "contentDocument", {
+        value: iframeDoc,
+        writable: false,
+      });
+
+      const config: ExportNode = {
+        id: "iframe-include",
+        selector: "iframe",
+        action: "include",
+        children: [],
+      };
+
+      // Act
+      const result = processElement(element, config);
+
+      // Assert
+      expect(result).toContain("# Frame Title");
+      expect(result).toContain("Frame content");
+    });
+
+    it("should handle cross-origin iframe gracefully", () => {
+      // Arrange
+      const html = '<iframe id="blocked"></iframe>';
+      const element = createElementFromHtml(html);
+
+      // Mock cross-origin blocked access
+      Object.defineProperty(element, "contentDocument", {
+        get() {
+          throw new Error("Cross-origin access blocked");
+        },
+      });
+
+      const config: ExportNode = {
+        id: "iframe-include",
+        selector: "iframe",
+        action: "include",
+        children: [],
+      };
+
+      // Act
+      const result = processElement(element, config);
+
+      // Assert
+      expect(result).toContain("[Embedded Content:");
     });
   });
 

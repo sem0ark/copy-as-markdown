@@ -1,13 +1,14 @@
 /**
  * Element picker orchestrator
- * Coordinates highlighter, menu, and selector generation
+ * Uses text input for CSS selectors with visual highlighting
  */
 
-import { createExportNode, insertNodeInTree } from "../shared/tree-utils";
+import { processElement } from "../engine/processor";
+import { createExportNode } from "../shared/tree-utils";
 import type { ExportNode } from "../shared/types";
-import { getElementFromPoint, Highlighter } from "./highlighter";
+import { querySelectorAllDeep } from "../utils/dom-utils";
+import { Highlighter } from "./highlighter";
 import { type MenuAction, PickerMenu, promptForTemplate } from "./picker-menu";
-import { generateElementLabel, generateSelector } from "./selector-gen";
 
 export interface PickerCallbacks {
   onNodeCreated: (node: ExportNode, element: Element) => void;
@@ -15,14 +16,16 @@ export interface PickerCallbacks {
 }
 
 /**
- * Main picker class that orchestrates the element selection UI
+ * Main picker class that provides a text input UI for CSS selectors
  */
 export class Picker {
   private highlighter: Highlighter;
   private menu: PickerMenu;
-  private currentTarget: Element | null = null;
+  private panel: HTMLDivElement | null = null;
+  private input: HTMLInputElement | null = null;
   private isActive = false;
   private callbacks: PickerCallbacks | null = null;
+  private currentElements: Element[] = [];
 
   constructor() {
     this.highlighter = new Highlighter();
@@ -37,8 +40,8 @@ export class Picker {
 
     this.isActive = true;
     this.callbacks = callbacks;
+    this.createPanel();
     this.highlighter.activate();
-    this.attachListeners();
   }
 
   /**
@@ -50,144 +53,262 @@ export class Picker {
     this.isActive = false;
     this.highlighter.deactivate();
     this.menu.hide();
-    this.detachListeners();
+    this.removePanel();
     this.callbacks = null;
   }
 
   /**
-   * Handles mouse move events
+   * Creates the selector input panel
    */
-  private onMouseMove = (e: MouseEvent): void => {
-    if (!this.isActive || this.menu.visible) return;
+  private createPanel(): void {
+    this.panel = document.createElement("div");
+    this.panel.className = "md-saver-picker-panel";
 
-    const target = getElementFromPoint(e.clientX, e.clientY);
+    Object.assign(this.panel.style, {
+      position: "fixed",
+      top: "20px",
+      left: "50%",
+      transform: "translateX(-50%)",
+      zIndex: "2147483647",
+      backgroundColor: "#fff",
+      border: "2px solid #4A90E2",
+      borderRadius: "8px",
+      padding: "16px",
+      boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+      fontFamily: "system-ui, -apple-system, sans-serif",
+      minWidth: "400px",
+    });
 
-    if (
-      target &&
-      target !== document.body &&
-      target !== document.documentElement
-    ) {
-      this.currentTarget = target;
-      this.highlighter.highlight(target);
-    } else {
+    // Title
+    const title = document.createElement("div");
+    title.textContent = "Enter CSS Selector";
+    Object.assign(title.style, {
+      fontSize: "14px",
+      fontWeight: "600",
+      marginBottom: "8px",
+      color: "#333",
+    });
+    this.panel.appendChild(title);
+
+    // Input field
+    this.input = document.createElement("input");
+    this.input.type = "text";
+    this.input.placeholder = "e.g., .main-content or iframe#doc >>> article";
+    Object.assign(this.input.style, {
+      width: "100%",
+      padding: "8px",
+      border: "1px solid #ddd",
+      borderRadius: "4px",
+      fontSize: "13px",
+      fontFamily: "monospace",
+      boxSizing: "border-box",
+    });
+    this.input.addEventListener("input", this.onInputChange);
+    this.input.addEventListener("keydown", this.onInputKeydown);
+    this.panel.appendChild(this.input);
+
+    // Status line
+    const status = document.createElement("div");
+    status.className = "md-saver-status";
+    Object.assign(status.style, {
+      fontSize: "12px",
+      marginTop: "8px",
+      color: "#666",
+      minHeight: "16px",
+    });
+    this.panel.appendChild(status);
+
+    // Button row
+    const buttonRow = document.createElement("div");
+    Object.assign(buttonRow.style, {
+      display: "flex",
+      gap: "8px",
+      marginTop: "12px",
+    });
+
+    const createButton = (
+      text: string,
+      action: () => void,
+      primary = false,
+    ) => {
+      const btn = document.createElement("button");
+      btn.textContent = text;
+      Object.assign(btn.style, {
+        padding: "6px 12px",
+        border: primary ? "none" : "1px solid #ddd",
+        borderRadius: "4px",
+        fontSize: "13px",
+        cursor: "pointer",
+        backgroundColor: primary ? "#4A90E2" : "#fff",
+        color: primary ? "#fff" : "#333",
+      });
+      btn.addEventListener("click", action);
+      return btn;
+    };
+
+    buttonRow.appendChild(
+      createButton("Include", () => this.handleAction("include"), true),
+    );
+    buttonRow.appendChild(
+      createButton("Ignore", () => this.handleAction("ignore")),
+    );
+    buttonRow.appendChild(
+      createButton("Template", () => this.handleAction("template")),
+    );
+    buttonRow.appendChild(createButton("Cancel", () => this.handleCancel()));
+
+    this.panel.appendChild(buttonRow);
+    document.body.appendChild(this.panel);
+
+    // Focus input
+    this.input.focus();
+  }
+
+  /**
+   * Removes the selector input panel
+   */
+  private removePanel(): void {
+    if (this.panel) {
+      this.panel.remove();
+      this.panel = null;
+      this.input = null;
+    }
+  }
+
+  /**
+   * Handles input change
+   */
+  private onInputChange = (): void => {
+    const selector = this.input?.value.trim() || "";
+
+    if (!selector) {
       this.highlighter.hide();
-      this.currentTarget = null;
+      this.currentElements = [];
+      this.updateStatus("");
+      return;
+    }
+
+    try {
+      this.currentElements = querySelectorAllDeep(selector);
+
+      if (this.currentElements.length === 0) {
+        this.highlighter.hide();
+        this.updateStatus("⚠️ No elements found");
+      } else if (this.currentElements.length === 1) {
+        this.highlighter.highlight(this.currentElements[0]);
+        this.updateStatus("✓ 1 element found");
+      } else {
+        // Highlight first element
+        this.highlighter.highlight(this.currentElements[0]);
+        this.updateStatus(
+          `⚠️ ${this.currentElements.length} elements found (first highlighted)`,
+        );
+      }
+    } catch (error) {
+      this.highlighter.hide();
+      this.currentElements = [];
+      this.updateStatus(`❌ Invalid selector: ${(error as Error).message}`);
     }
   };
 
   /**
-   * Handles click events
+   * Updates the status line
    */
-  private onClick = (e: MouseEvent): void => {
-    if (!this.isActive) return;
-
-    // Don't intercept if menu is already open
-    if (this.menu.visible) return;
-
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (this.currentTarget) {
-      this.showMenu(this.currentTarget, e.clientX, e.clientY);
+  private updateStatus(text: string): void {
+    const status = this.panel?.querySelector(".md-saver-status");
+    if (status) {
+      status.textContent = text;
     }
-  };
+  }
 
   /**
-   * Handles keydown events (ESC to cancel)
+   * Handles keydown in input
    */
-  private onKeyDown = (e: KeyboardEvent): void => {
-    if (!this.isActive) return;
-
-    if (e.key === "Escape") {
+  private onInputKeydown = (e: KeyboardEvent): void => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      this.handleAction("include");
+    } else if (e.key === "Escape") {
       e.preventDefault();
       this.handleCancel();
     }
   };
 
   /**
-   * Shows the action menu for the selected element
+   * Handles action button clicks
    */
-  private showMenu(element: Element, x: number, y: number): void {
-    this.menu.show(x, y, (action) => {
-      this.handleMenuAction(action, element);
-    });
-  }
+  private handleAction(action: MenuAction): void {
+    const selector = this.input?.value.trim() || "";
 
-  /**
-   * Handles menu action selection
-   */
-  private handleMenuAction(action: MenuAction, element: Element): void {
-    this.menu.hide();
-
-    switch (action) {
-      case "include":
-        this.handleInclude(element);
-        break;
-      case "ignore":
-        this.handleIgnore(element);
-        break;
-      case "template":
-        this.handleTemplate(element);
-        break;
-      case "cancel":
-        this.handleCancel();
-        break;
-    }
-  }
-
-  /**
-   * Handles "Set as Main Frame" action
-   */
-  private handleInclude(element: Element): void {
-    const selector = generateSelector(element);
-    const node = createExportNode(selector, "include");
-
-    console.log(
-      `[Picker] Include: ${generateElementLabel(element)} → ${selector}`,
-    );
-
-    if (this.callbacks) {
-      this.callbacks.onNodeCreated(node, element);
-    }
-
-    this.deactivate();
-  }
-
-  /**
-   * Handles "Ignore Region" action
-   */
-  private handleIgnore(element: Element): void {
-    const selector = generateSelector(element);
-    const node = createExportNode(selector, "ignore");
-
-    console.log(
-      `[Picker] Ignore: ${generateElementLabel(element)} → ${selector}`,
-    );
-
-    if (this.callbacks) {
-      this.callbacks.onNodeCreated(node, element);
-    }
-
-    this.deactivate();
-  }
-
-  /**
-   * Handles "Create Template" action
-   */
-  private handleTemplate(element: Element): void {
-    const template = promptForTemplate();
-
-    if (!template) {
-      // User cancelled the prompt, reactivate picker
+    if (!selector) {
+      alert("Please enter a CSS selector");
       return;
     }
 
-    const selector = generateSelector(element);
+    if (this.currentElements.length === 0) {
+      alert("No elements found for this selector");
+      return;
+    }
+
+    // Use first element for processing
+    const element = this.currentElements[0];
+
+    switch (action) {
+      case "include":
+        this.handleInclude(selector, element);
+        break;
+      case "ignore":
+        this.handleIgnore(selector, element);
+        break;
+      case "template":
+        this.handleTemplate(selector, element);
+        break;
+    }
+  }
+
+  /**
+   * Handles "Include" action
+   */
+  private handleInclude(selector: string, element: Element): void {
+    const node = createExportNode(selector, "include");
+
+    console.log(`[Picker] Include: ${selector}`);
+
+    if (this.callbacks) {
+      this.callbacks.onNodeCreated(node, element);
+    }
+
+    this.deactivate();
+  }
+
+  /**
+   * Handles "Ignore" action
+   */
+  private handleIgnore(selector: string, element: Element): void {
+    const node = createExportNode(selector, "ignore");
+
+    console.log(`[Picker] Ignore: ${selector}`);
+
+    if (this.callbacks) {
+      this.callbacks.onNodeCreated(node, element);
+    }
+
+    this.deactivate();
+  }
+
+  /**
+   * Handles "Template" action
+   */
+  private handleTemplate(selector: string, element: Element): void {
+    const template = promptForTemplate();
+
+    if (!template) {
+      return;
+    }
+
     const node = createExportNode(selector, "template", template);
 
-    console.log(
-      `[Picker] Template: ${generateElementLabel(element)} → ${selector}\nTemplate: ${template}`,
-    );
+    console.log(`[Picker] Template: ${selector}\nTemplate: ${template}`);
 
     if (this.callbacks) {
       this.callbacks.onNodeCreated(node, element);
@@ -207,23 +328,5 @@ export class Picker {
     }
 
     this.deactivate();
-  }
-
-  /**
-   * Attaches event listeners
-   */
-  private attachListeners(): void {
-    document.addEventListener("mousemove", this.onMouseMove, true);
-    document.addEventListener("click", this.onClick, true);
-    document.addEventListener("keydown", this.onKeyDown, true);
-  }
-
-  /**
-   * Detaches event listeners
-   */
-  private detachListeners(): void {
-    document.removeEventListener("mousemove", this.onMouseMove, true);
-    document.removeEventListener("click", this.onClick, true);
-    document.removeEventListener("keydown", this.onKeyDown, true);
   }
 }

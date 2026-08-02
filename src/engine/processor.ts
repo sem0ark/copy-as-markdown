@@ -40,7 +40,27 @@ export function processElement(el: HTMLElement, config: ExportNode): string {
   if (config.action === "include") {
     // If no child rules, let Turndown handle the entire subtree
     if (config.children.length === 0) {
-      return elementToMarkdown(el);
+      // Check if this is an iframe that we should drill into
+      if (el.tagName === "IFRAME") {
+        const iframe = el as HTMLIFrameElement;
+        try {
+          const innerDoc = iframe.contentDocument;
+          if (innerDoc?.body) {
+            // Process the iframe's body content instead
+            const clone = innerDoc.body.cloneNode(true) as HTMLElement;
+            stripInvisibleTags(clone);
+            return elementToMarkdown(clone);
+          }
+        } catch (e) {
+          console.warn("Cross-origin iframe blocked access", e);
+          return `[Embedded Content: ${iframe.src}]`;
+        }
+      }
+
+      // Clone and strip scripts
+      const clone = el.cloneNode(true) as HTMLElement;
+      stripInvisibleTags(clone);
+      return elementToMarkdown(clone);
     }
 
     // If child rules exist, process them recursively
@@ -49,6 +69,72 @@ export function processElement(el: HTMLElement, config: ExportNode): string {
 
   // Default fallback
   return "";
+}
+
+/**
+ * Removes invisible tags and their content from a DOM element.
+ * This prevents JavaScript code from appearing in the exported markdown.
+ * IMPORTANT: Preserves <script type="math/tex"> tags (MathJax LaTeX source).
+ */
+function stripInvisibleTags(element: HTMLElement): void {
+  const scripts = element.querySelectorAll("script, style, noscript");
+  for (const script of scripts) {
+    // Preserve MathJax LaTeX source scripts
+    if (script.tagName === "SCRIPT") {
+      const type = script.getAttribute("type");
+      if (type === "math/tex" || type === "math/tex; mode=display") {
+        continue; // Keep this script tag
+      }
+    }
+    script.remove();
+  }
+}
+
+/**
+ * Resolves elements from a selector, drilling into iframes if needed
+ * Supports iframe drilling syntax: "iframe#id >>> .target"
+ *
+ * For cloned contexts, we need to find the original iframe in the live DOM
+ * to access its contentDocument
+ */
+function resolveElementsInContext(
+  context: Element | Document,
+  selector: string,
+  originalContext?: Element,
+): Element[] {
+  const parts = selector.split(">>>").map((s) => s.trim());
+
+  if (parts.length === 1) {
+    // Simple selector
+    return Array.from(context.querySelectorAll(selector));
+  }
+
+  // Iframe drilling - we need to work with the original context
+  // because cloned iframes don't have contentDocument
+  const searchContext = originalContext || context;
+  const [iframeSelector, ...innerSelectors] = parts;
+  const iframes = searchContext.querySelectorAll(iframeSelector);
+  const results: Element[] = [];
+
+  for (const iframe of iframes) {
+    if (iframe.tagName !== "IFRAME") continue;
+
+    try {
+      const iframeEl = iframe as HTMLIFrameElement;
+      const innerDoc = iframeEl.contentDocument;
+      if (!innerDoc) continue;
+
+      // Build the inner selector
+      const innerSelector = innerSelectors.join(" >>> ").trim();
+      const innerElements = innerDoc.querySelectorAll(innerSelector);
+
+      results.push(...Array.from(innerElements));
+    } catch (e) {
+      console.warn("Cross-origin iframe blocked access", e);
+    }
+  }
+
+  return results;
 }
 
 /**
@@ -64,10 +150,18 @@ function processWithChildRules(
   // Clone the element to avoid mutating the live DOM
   const clone = parentElement.cloneNode(true) as HTMLElement;
 
+  // Remove all script tags and their content
+  stripInvisibleTags(clone);
+
   // Process each child rule
   for (const rule of childRules) {
-    // Find all matching elements within this parent
-    const matchingElements = Array.from(clone.querySelectorAll(rule.selector));
+    // Use resolveElementsInContext to support iframe drilling
+    // Pass original element for iframe content access
+    const matchingElements = resolveElementsInContext(
+      clone,
+      rule.selector,
+      parentElement,
+    );
 
     for (const matchedEl of matchingElements) {
       // Recursively process this matched element
@@ -77,9 +171,23 @@ function processWithChildRules(
         results.push(result);
       }
 
-      // Remove from clone regardless of action to prevent duplicate processing
-      // This ensures each element is only processed once
-      matchedEl.remove();
+      // For iframe drilling, we need to remove the iframe from the clone
+      // not the matched element from inside the iframe
+      if (rule.selector.includes(">>>")) {
+        const [iframeSelector] = rule.selector
+          .split(">>>")
+          .map((s) => s.trim());
+        const iframesToRemove = clone.querySelectorAll(iframeSelector);
+        for (const iframe of iframesToRemove) {
+          iframe.remove();
+        }
+      } else {
+        // For normal selectors, find and remove from clone
+        const toRemove = clone.querySelector(rule.selector);
+        if (toRemove) {
+          toRemove.remove();
+        }
+      }
     }
   }
 

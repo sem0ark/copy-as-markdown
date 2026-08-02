@@ -9,6 +9,7 @@ export default defineConfig({
       input: {
         background: resolve(__dirname, "src/background.ts"),
         content: resolve(__dirname, "src/content.ts"),
+        config: resolve(__dirname, "src/config.ts"),
       },
       output: {
         entryFileNames: "[name].js",

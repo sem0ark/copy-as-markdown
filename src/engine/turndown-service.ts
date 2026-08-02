@@ -50,21 +50,46 @@ function createTurndownService(): TurndownService {
  * Converts LaTeX containers to Obsidian-style $...$ or $$...$$ format.
  */
 function addLatexRule(service: TurndownService): void {
-  service.addRule("latex", {
+  // Rule 1: Suppress visual MathJax/KaTeX previews and SVG elements
+  // This prevents Turndown from trying to parse SVG paths or duplicate content
+  service.addRule("latex-previews", {
+    filter: (node) => {
+      if (node.nodeType !== 1) return false;
+      const element = node as Element;
+
+      return (
+        element.classList.contains("MathJax_Preview") ||
+        element.classList.contains("MathJax_SVG") ||
+        element.classList.contains("katex-html")
+      );
+    },
+    replacement: () => "", // Remove these from output
+  });
+
+  // Rule 2: The actual LaTeX extraction
+  service.addRule("latex-content", {
     filter: (node) => {
       if (node.nodeType !== 1) return false;
       const element = node as Element;
       const tagName = element.nodeName.toLowerCase();
 
+      // Check for script tags with math/tex type (MathJax v2 source)
+      if (tagName === "script") {
+        const type = element.getAttribute("type");
+        return type === "math/tex" || type === "math/tex; mode=display";
+      }
+
+      // Check for MathJax containers (v2 and v3)
       const isMathJax =
         tagName === "mjx-container" ||
         element.classList.contains("MathJax") ||
-        element.classList.contains("mjx-container");
+        element.classList.contains("mjx-container") ||
+        element.classList.contains("MathJax_Display");
 
+      // Check for KaTeX containers
       const isKatex =
         element.classList.contains("katex") ||
-        element.classList.contains("katex-mathml") ||
-        element.classList.contains("katex-html");
+        element.classList.contains("katex-mathml");
 
       return isMathJax || isKatex;
     },
@@ -78,7 +103,7 @@ function addLatexRule(service: TurndownService): void {
       }
 
       const isDisplay = isDisplayMath(element);
-      return wrapLatex(tex, isDisplay);
+      return wrapLatex(tex, isDisplay, element);
     },
   });
 }

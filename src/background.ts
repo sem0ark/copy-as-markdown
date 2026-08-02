@@ -13,6 +13,18 @@ chrome.runtime.onInstalled.addListener(() => {
     contexts: ["page"],
   });
 
+  chrome.contextMenus.create({
+    id: "select-element",
+    title: "Use as Export Root",
+    contexts: ["all"],
+  });
+
+  chrome.contextMenus.create({
+    id: "open-config",
+    title: "Open Configuration Editor",
+    contexts: ["action"],
+  });
+
   console.log("Markdown Precision Saver installed");
 });
 
@@ -41,6 +53,19 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     } catch (error) {
       console.error("Failed to activate configuration mode:", error);
     }
+  } else if (info.menuItemId === "select-element") {
+    try {
+      // Send message with selector from inspected element
+      const message: ExtensionMessage = {
+        type: "SELECT_INSPECTED_ELEMENT",
+      };
+      await chrome.tabs.sendMessage(tab.id, message);
+    } catch (error) {
+      console.error("Failed to select inspected element:", error);
+    }
+  } else if (info.menuItemId === "open-config") {
+    // Open configuration editor in new tab
+    chrome.tabs.create({ url: chrome.runtime.getURL("config.html") });
   }
 });
 
