@@ -104,3 +104,103 @@ function validateExportNode(node: ExportNode, seenIds: Set<string>): string[] {
 
   return errors;
 }
+
+/**
+ * Inserts a new ExportNode into the tree at the appropriate location.
+ * Determines the correct parent based on DOM hierarchy.
+ * @param root - The root node of the tree
+ * @param newNode - The new node to insert
+ * @param targetElement - The DOM element the new node represents
+ * @returns true if inserted successfully, false if the location wasn't found
+ */
+export function insertNodeInTree(
+  root: ExportNode,
+  newNode: ExportNode,
+  targetElement: Element,
+): boolean {
+  // Find the closest ancestor in the tree that matches a DOM parent
+  const parent = findClosestParentNode(root, targetElement);
+
+  if (parent) {
+    parent.children.push(newNode);
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Finds the closest ancestor ExportNode that matches a parent of the target element.
+ * @param node - Current node being checked
+ * @param targetElement - The DOM element to find a parent for
+ * @returns The closest parent ExportNode or null
+ */
+function findClosestParentNode(
+  node: ExportNode,
+  targetElement: Element,
+): ExportNode | null {
+  // Check if the current node's selector matches an ancestor of targetElement
+  const matchedElement = findMatchingAncestor(targetElement, node.selector);
+
+  if (matchedElement) {
+    // Try to find a more specific child node that's also an ancestor
+    for (const child of node.children) {
+      const childMatch = findClosestParentNode(child, targetElement);
+      if (childMatch) {
+        return childMatch;
+      }
+    }
+
+    // This node is the closest ancestor
+    return node;
+  }
+
+  return null;
+}
+
+/**
+ * Finds an ancestor of the element that matches the given selector.
+ * @param element - The element to start from
+ * @param selector - The CSS selector to match
+ * @returns The matching ancestor element or null
+ */
+function findMatchingAncestor(
+  element: Element,
+  selector: string,
+): Element | null {
+  let current: Element | null = element.parentElement;
+
+  while (current) {
+    try {
+      if (current.matches(selector)) {
+        return current;
+      }
+    } catch {
+      // Invalid selector, skip
+    }
+    current = current.parentElement;
+  }
+
+  return null;
+}
+
+/**
+ * Creates a new ExportNode with default values.
+ * @param selector - CSS selector for the node
+ * @param action - Action type for the node
+ * @param template - Optional template string
+ * @returns A new ExportNode
+ */
+export function createExportNode(
+  selector: string,
+  action: "include" | "ignore" | "template",
+  template?: string,
+): ExportNode {
+  return {
+    id: generateNodeId(),
+    selector,
+    action,
+    template,
+    children: [],
+  };
+}

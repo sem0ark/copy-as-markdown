@@ -60,13 +60,28 @@ Pure TypeScript logic that operates on DOM clones. This layer is strictly decoup
 **Directory:** `src/ui/`
 Simplistic Vanilla TS components injected into the web page.
 
-#### `picker.ts` (AdBlock-Style Selector)
-- **Visuals**: A high-z-index SVG/Div overlay for element highlighting.
-- **Selector Logic**: Generates stable CSS selectors (ID > Unique Class > Tag Path).
-- **Action Menu**: A floating micro-menu appearing on click:
-    - **Include**: Set as main content or override an ignored parent.
-    - **Ignore**: Exclude from export.
-    - **Configure Template**: Define a custom Markdown wrapper.
+#### `picker.ts` (Main Orchestrator)
+- **Role**: Coordinates the element selection workflow.
+- **Callbacks**: Provides `onNodeCreated` and `onCancel` hooks for integration with content script.
+- **Keyboard**: ESC key cancels the picker mode.
+
+#### `selector-gen.ts` (CSS Selector Generator)
+- **Strategy**: Generates stable CSS selectors with priority: ID > Unique Class > nth-of-type path.
+- **Validation**: `validateSelector()` ensures the selector uniquely identifies the target element.
+- **Labeling**: `generateElementLabel()` creates human-readable element descriptions.
+- **Features**: Excludes picker-specific classes, handles special characters via `CSS.escape()`.
+
+#### `highlighter.ts` (Visual Overlay)
+- **Implementation**: A positioned `div` overlay that tracks mouse movement.
+- **Styling**: Customizable border color, width, and background transparency.
+- **Performance**: Smooth transitions with `requestAnimationFrame`-compatible updates.
+- **Helper**: `getElementFromPoint()` temporarily hides picker UI to query the actual DOM element.
+
+#### `picker-menu.ts` (Action Menu)
+- **Actions**: Include, Ignore, Template, Cancel buttons.
+- **Positioning**: Auto-adjusts to stay within viewport bounds.
+- **Styling**: Modern, clean UI with hover states.
+- **Template Input**: `promptForTemplate()` helper for user input.
 
 #### `toast.ts`
 - **Role**: Provides immediate feedback (e.g., "Copied to Clipboard").

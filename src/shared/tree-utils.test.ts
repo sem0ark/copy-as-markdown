@@ -1,7 +1,10 @@
+import { JSDOM } from "jsdom";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
+  createExportNode,
   findNodeById,
   generateNodeId,
+  insertNodeInTree,
   validateSiteProfile,
 } from "./tree-utils";
 import type { ExportNode, SiteProfile } from "./types";
@@ -286,6 +289,202 @@ describe("tree-utils", () => {
 
       // Assert
       expect(errors).toHaveLength(0);
+    });
+  });
+
+  describe("createExportNode", () => {
+    it("should create node with include action", () => {
+      const node = createExportNode(".main", "include");
+
+      expect(node.selector).toBe(".main");
+      expect(node.action).toBe("include");
+      expect(node.children).toEqual([]);
+      expect(node.id).toMatch(/^node_/);
+    });
+
+    it("should create node with ignore action", () => {
+      const node = createExportNode(".ads", "ignore");
+
+      expect(node.selector).toBe(".ads");
+      expect(node.action).toBe("ignore");
+      expect(node.template).toBeUndefined();
+    });
+
+    it("should create node with template", () => {
+      const node = createExportNode(".note", "template", "> {{content}}");
+
+      expect(node.selector).toBe(".note");
+      expect(node.action).toBe("template");
+      expect(node.template).toBe("> {{content}}");
+    });
+  });
+
+  describe("insertNodeInTree", () => {
+    let dom: JSDOM;
+    let document: Document;
+
+    beforeEach(() => {
+      dom = new JSDOM("<!DOCTYPE html><html><body></body></html>");
+      document = dom.window.document;
+      global.document = document;
+    });
+
+    it("should insert node as child of matching parent", () => {
+      document.body.innerHTML = `
+        <article class="main">
+          <div class="content">
+            <p class="target">Text</p>
+          </div>
+        </article>
+      `;
+
+      const root: ExportNode = {
+        id: "root",
+        selector: "article.main",
+        action: "include",
+        children: [],
+      };
+
+      const newNode = createExportNode(".target", "ignore");
+      const targetElement = document.querySelector(".target")!;
+
+      const success = insertNodeInTree(root, newNode, targetElement);
+
+      expect(success).toBe(true);
+      expect(root.children).toHaveLength(1);
+      expect(root.children[0]).toBe(newNode);
+    });
+
+    it("should insert node under most specific parent", () => {
+      document.body.innerHTML = `
+        <article class="main">
+          <div class="content">
+            <p class="target">Text</p>
+          </div>
+        </article>
+      `;
+
+      const root: ExportNode = {
+        id: "root",
+        selector: "article.main",
+        action: "include",
+        children: [
+          {
+            id: "content",
+            selector: ".content",
+            action: "include",
+            children: [],
+          },
+        ],
+      };
+
+      const newNode = createExportNode(".target", "ignore");
+      const targetElement = document.querySelector(".target")!;
+
+      const success = insertNodeInTree(root, newNode, targetElement);
+
+      expect(success).toBe(true);
+      expect(root.children[0].children).toHaveLength(1);
+      expect(root.children[0].children[0]).toBe(newNode);
+    });
+
+    it("should return false when no matching parent found", () => {
+      document.body.innerHTML = `
+        <article class="main">
+          <div class="content">
+            <p class="target">Text</p>
+          </div>
+        </article>
+      `;
+
+      const root: ExportNode = {
+        id: "root",
+        selector: ".nonexistent",
+        action: "include",
+        children: [],
+      };
+
+      const newNode = createExportNode(".target", "ignore");
+      const targetElement = document.querySelector(".target")!;
+
+      const success = insertNodeInTree(root, newNode, targetElement);
+
+      expect(success).toBe(false);
+      expect(root.children).toHaveLength(0);
+    });
+
+    it("should handle complex nested hierarchies", () => {
+      document.body.innerHTML = `
+        <main>
+          <article id="post">
+            <header>
+              <h1>Title</h1>
+            </header>
+            <section class="content">
+              <div class="note">
+                <span class="icon">!</span>
+                <p class="text">Note text</p>
+              </div>
+            </section>
+          </article>
+        </main>
+      `;
+
+      const root: ExportNode = {
+        id: "root",
+        selector: "#post",
+        action: "include",
+        children: [
+          {
+            id: "content",
+            selector: ".content",
+            action: "include",
+            children: [
+              {
+                id: "note",
+                selector: ".note",
+                action: "template",
+                template: "> {{content}}",
+                children: [],
+              },
+            ],
+          },
+        ],
+      };
+
+      const newNode = createExportNode(".icon", "ignore");
+      const targetElement = document.querySelector(".icon")!;
+
+      const success = insertNodeInTree(root, newNode, targetElement);
+
+      expect(success).toBe(true);
+      const noteNode = root.children[0].children[0];
+      expect(noteNode.children).toHaveLength(1);
+      expect(noteNode.children[0]).toBe(newNode);
+    });
+
+    it("should insert at root level when target is direct child", () => {
+      document.body.innerHTML = `
+        <article class="main">
+          <div class="sidebar">Sidebar</div>
+        </article>
+      `;
+
+      const root: ExportNode = {
+        id: "root",
+        selector: "article.main",
+        action: "include",
+        children: [],
+      };
+
+      const newNode = createExportNode(".sidebar", "ignore");
+      const targetElement = document.querySelector(".sidebar")!;
+
+      const success = insertNodeInTree(root, newNode, targetElement);
+
+      expect(success).toBe(true);
+      expect(root.children).toHaveLength(1);
+      expect(root.children[0]).toBe(newNode);
     });
   });
 
