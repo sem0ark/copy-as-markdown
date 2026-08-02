@@ -26,11 +26,19 @@ This extension is a high-performance utility for transforming web DOM trees into
 Pure TypeScript logic that operates on DOM clones. This layer is strictly decoupled from `chrome.*` APIs.
 
 #### `processor.ts` (The Recursive Walker)
-- **Algorithm**: Iterates through the DOM tree alongside the `ExportNode` configuration tree.
+- **Algorithm**: Recursively walks the DOM tree alongside the `ExportNode` configuration tree.
+- **Entry Point**: `processElement(el: HTMLElement, config: ExportNode): string`
 - **Logic**: 
-    - If a node matches an `ignore` rule, it is pruned.
-    - If a node matches a `template` rule, it is transformed into a string immediately.
-    - If a node matches an `include` rule, the walker recurses into its children.
+    1. **Ignore**: If `action === 'ignore'`, returns empty string (element is excluded).
+    2. **Template**: If `action === 'template'`, extracts text content and applies template transformation.
+    3. **Include**: If `action === 'include'`:
+        - **No children**: Lets Turndown handle the entire subtree as-is.
+        - **With children**: Processes child rules recursively, removes matched elements from DOM clone, then converts remaining content via Turndown.
+- **Key Features**:
+    - Clones DOM before processing to avoid side effects.
+    - Each matched element is processed exactly once (prevents duplication).
+    - Supports nested rules (e.g., parent `include` with child `ignore` or `template`).
+    - Template rules override default Turndown processing for specific elements.
 - **TODO**: Implement content-density heuristics for auto-detection if no profile exists.
 
 #### `turndown-service.ts`

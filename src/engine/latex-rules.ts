@@ -1,4 +1,4 @@
-import type TurndownService from 'turndown';
+import type TurndownService from "turndown";
 
 /**
  * Custom Turndown rules for LaTeX/KaTeX/MathJax extraction
@@ -10,17 +10,19 @@ import type TurndownService from 'turndown';
  */
 export function addLatexRules(service: TurndownService): void {
   // Inline math (KaTeX)
-  service.addRule('katex-inline', {
+  service.addRule("katex-inline", {
     filter: (node) => {
       return (
-        node.nodeName === 'SPAN' &&
-        (node.classList.contains('katex') ||
-          node.classList.contains('katex-mathml'))
+        node.nodeName === "SPAN" &&
+        (node.classList.contains("katex") ||
+          node.classList.contains("katex-mathml"))
       );
     },
     replacement: (content, node) => {
       // Try to extract from annotation element
-      const annotation = (node as Element).querySelector('annotation[encoding="application/x-tex"]');
+      const annotation = (node as Element).querySelector(
+        'annotation[encoding="application/x-tex"]',
+      );
       if (annotation) {
         return `$${annotation.textContent}$`;
       }
@@ -29,15 +31,16 @@ export function addLatexRules(service: TurndownService): void {
   });
 
   // Display math (KaTeX)
-  service.addRule('katex-display', {
+  service.addRule("katex-display", {
     filter: (node) => {
       return (
-        node.nodeName === 'SPAN' &&
-        node.classList.contains('katex-display')
+        node.nodeName === "SPAN" && node.classList.contains("katex-display")
       );
     },
     replacement: (content, node) => {
-      const annotation = (node as Element).querySelector('annotation[encoding="application/x-tex"]');
+      const annotation = (node as Element).querySelector(
+        'annotation[encoding="application/x-tex"]',
+      );
       if (annotation) {
         return `\n$$${annotation.textContent}$$\n`;
       }
@@ -46,12 +49,12 @@ export function addLatexRules(service: TurndownService): void {
   });
 
   // MathJax v2/v3 inline
-  service.addRule('mathjax-inline', {
+  service.addRule("mathjax-inline", {
     filter: (node) => {
       return (
-        (node.nodeName === 'SPAN' || node.nodeName === 'SCRIPT') &&
-        (node.classList.contains('math-inline') ||
-          (node as Element).getAttribute('type') === 'math/tex')
+        (node.nodeName === "SPAN" || node.nodeName === "SCRIPT") &&
+        (node.classList.contains("math-inline") ||
+          (node as Element).getAttribute("type") === "math/tex")
       );
     },
     replacement: (content, node) => {
@@ -61,12 +64,12 @@ export function addLatexRules(service: TurndownService): void {
   });
 
   // MathJax display
-  service.addRule('mathjax-display', {
+  service.addRule("mathjax-display", {
     filter: (node) => {
       return (
-        (node.nodeName === 'SPAN' || node.nodeName === 'SCRIPT') &&
-        (node.classList.contains('math-display') ||
-          (node as Element).getAttribute('type') === 'math/tex; mode=display')
+        (node.nodeName === "SPAN" || node.nodeName === "SCRIPT") &&
+        (node.classList.contains("math-display") ||
+          (node as Element).getAttribute("type") === "math/tex; mode=display")
       );
     },
     replacement: (content, node) => {

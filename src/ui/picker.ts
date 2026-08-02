@@ -36,8 +36,8 @@ export class Picker {
    * Creates the highlight overlay element
    */
   private createHighlight(): void {
-    this.highlightElement = document.createElement('div');
-    this.highlightElement.className = 'md-saver-highlight';
+    this.highlightElement = document.createElement("div");
+    this.highlightElement.className = "md-saver-highlight";
     document.body.appendChild(this.highlightElement);
   }
 
@@ -70,22 +70,22 @@ export class Picker {
   private showMenu(element: Element, x: number, y: number): void {
     this.removeMenu();
 
-    this.menuElement = document.createElement('div');
-    this.menuElement.className = 'md-saver-menu';
+    this.menuElement = document.createElement("div");
+    this.menuElement.className = "md-saver-menu";
     this.menuElement.style.top = `${y + window.scrollY}px`;
     this.menuElement.style.left = `${x + window.scrollX}px`;
 
     const buttons = [
-      { text: 'Set as Main Frame', action: () => this.setMainFrame(element) },
-      { text: 'Ignore Region', action: () => this.ignoreRegion(element) },
-      { text: 'Create Template', action: () => this.createTemplate(element) },
-      { text: 'Cancel', action: () => this.removeMenu() },
+      { text: "Set as Main Frame", action: () => this.setMainFrame(element) },
+      { text: "Ignore Region", action: () => this.ignoreRegion(element) },
+      { text: "Create Template", action: () => this.createTemplate(element) },
+      { text: "Cancel", action: () => this.removeMenu() },
     ];
 
     for (const btn of buttons) {
-      const button = document.createElement('button');
+      const button = document.createElement("button");
       button.textContent = btn.text;
-      button.addEventListener('click', btn.action);
+      button.addEventListener("click", btn.action);
       this.menuElement.appendChild(button);
     }
 
@@ -133,16 +133,16 @@ export class Picker {
    * Attaches event listeners
    */
   private attachListeners(): void {
-    document.addEventListener('mousemove', this.onMouseMove, true);
-    document.addEventListener('click', this.onClick, true);
+    document.addEventListener("mousemove", this.onMouseMove, true);
+    document.addEventListener("click", this.onClick, true);
   }
 
   /**
    * Detaches event listeners
    */
   private detachListeners(): void {
-    document.removeEventListener('mousemove', this.onMouseMove, true);
-    document.removeEventListener('click', this.onClick, true);
+    document.removeEventListener("mousemove", this.onMouseMove, true);
+    document.removeEventListener("click", this.onClick, true);
   }
 
   /**
@@ -150,7 +150,7 @@ export class Picker {
    */
   private setMainFrame(element: Element): void {
     const selector = generateSelector(element);
-    console.log('Set main frame:', selector);
+    console.log("Set main frame:", selector);
     // TODO: Save to SiteProfile
     this.removeMenu();
     this.deactivate();
@@ -161,7 +161,7 @@ export class Picker {
    */
   private ignoreRegion(element: Element): void {
     const selector = generateSelector(element);
-    console.log('Ignore region:', selector);
+    console.log("Ignore region:", selector);
     // TODO: Save to SiteProfile
     this.removeMenu();
     this.deactivate();
@@ -173,12 +173,12 @@ export class Picker {
   private createTemplate(element: Element): void {
     const selector = generateSelector(element);
     const template = prompt(
-      'Enter Markdown template (use {{content}} for text):',
-      '> [!info]\n> {{content}}'
+      "Enter Markdown template (use {{content}} for text):",
+      "> [!info]\n> {{content}}",
     );
 
     if (template) {
-      console.log('Create template:', selector, template);
+      console.log("Create template:", selector, template);
       // TODO: Save to SiteProfile
     }
 
@@ -199,8 +199,8 @@ function generateSelector(element: Element): string {
   // Try unique class combination
   if (element.className) {
     const classes = Array.from(element.classList)
-      .filter((c) => c && !c.startsWith('md-saver-'))
-      .join('.');
+      .filter((c) => c && !c.startsWith("md-saver-"))
+      .join(".");
 
     if (classes) {
       const selector = `${element.tagName.toLowerCase()}.${classes}`;
@@ -224,5 +224,5 @@ function generateSelector(element: Element): string {
     current = parent;
   }
 
-  return path.join(' > ');
+  return path.join(" > ");
 }

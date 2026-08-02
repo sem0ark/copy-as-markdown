@@ -1,80 +1,95 @@
-import type { ExportNode, SiteProfile } from '../shared/types';
+import type { ExportNode } from "../shared/types";
+import { applyTemplate, type TemplateContext } from "./formatter";
+import { elementToMarkdown } from "./turndown-service";
 
 /**
  * Core DOM processing engine
  * Traverses the DOM tree alongside the SiteProfile tree
+ *
+ * Stage 3: Recursive DOM Processor
+ * Implements the logic that walks the DOM tree and ExportNode tree simultaneously
  */
 
 /**
- * Processes a DOM element according to the ExportNode rules
+ * Main entry point: Processes a DOM element according to ExportNode configuration
+ *
+ * Logic:
+ * 1. If action === 'ignore', return empty string
+ * 2. If action === 'template', extract text, apply template, return
+ * 3. If action === 'include':
+ *    - If children is empty, let Turndown handle the whole subtree
+ *    - If children exists, iterate children, find matching DOM elements, recursively call processElement
  */
-export function processNode(
-  element: Element,
-  node: ExportNode
-): string | null {
-  // Match the selector
-  if (!element.matches(node.selector)) {
-    return null;
+export function processElement(el: HTMLElement, config: ExportNode): string {
+  // Step 1: Handle 'ignore' action
+  if (config.action === "ignore") {
+    return "";
   }
 
-  // Apply action
-  switch (node.action) {
-    case 'ignore':
-      return null;
-
-    case 'template':
-      return applyTemplate(element, node.template || '{{content}}');
-
-    case 'include':
-    default:
-      return processChildren(element, node.children);
+  // Step 2: Handle 'template' action
+  if (config.action === "template") {
+    const textContent = el.textContent || "";
+    const template = config.template || "{{content}}";
+    const context: TemplateContext = {
+      content: textContent.trim(),
+    };
+    return applyTemplate(template, context);
   }
-}
 
-/**
- * Recursively processes child nodes
- */
-function processChildren(
-  element: Element,
-  childRules: ExportNode[]
-): string {
-  let result = '';
-
-  // If there are child rules, apply them recursively
-  if (childRules.length > 0) {
-    for (const child of element.children) {
-      for (const rule of childRules) {
-        const processed = processNode(child, rule);
-        if (processed) {
-          result += processed + '\n';
-        }
-      }
+  // Step 3: Handle 'include' action
+  if (config.action === "include") {
+    // If no child rules, let Turndown handle the entire subtree
+    if (config.children.length === 0) {
+      return elementToMarkdown(el);
     }
-  } else {
-    // No child rules, just extract text content
-    result = element.textContent || '';
+
+    // If child rules exist, process them recursively
+    return processWithChildRules(el, config.children);
   }
 
-  return result.trim();
+  // Default fallback
+  return "";
 }
 
 /**
- * Applies a template string with {{content}} placeholder
+ * Processes an element using child rules
+ * Iterates through DOM children and applies matching ExportNode rules
  */
-function applyTemplate(element: Element, template: string): string {
-  const content = element.textContent || '';
-  return template.replace(/\{\{content\}\}/g, content.trim());
-}
+function processWithChildRules(
+  parentElement: HTMLElement,
+  childRules: ExportNode[],
+): string {
+  const results: string[] = [];
 
-/**
- * Main entry point for processing a page
- */
-export function processPage(profile: SiteProfile): string {
-  const rootElement = document.querySelector(profile.root.selector);
+  // Clone the element to avoid mutating the live DOM
+  const clone = parentElement.cloneNode(true) as HTMLElement;
 
-  if (!rootElement) {
-    throw new Error(`Root selector not found: ${profile.root.selector}`);
+  // Process each child rule
+  for (const rule of childRules) {
+    // Find all matching elements within this parent
+    const matchingElements = Array.from(clone.querySelectorAll(rule.selector));
+
+    for (const matchedEl of matchingElements) {
+      // Recursively process this matched element
+      const result = processElement(matchedEl as HTMLElement, rule);
+
+      if (result) {
+        results.push(result);
+      }
+
+      // Remove from clone regardless of action to prevent duplicate processing
+      // This ensures each element is only processed once
+      matchedEl.remove();
+    }
   }
 
-  return processNode(rootElement, profile.root) || '';
+  // Convert remaining content (not covered by any rule) to markdown
+  const remainingMarkdown = elementToMarkdown(clone);
+
+  // Add remaining content if it exists
+  if (remainingMarkdown.trim()) {
+    results.push(remainingMarkdown);
+  }
+
+  return results.join("\n\n");
 }

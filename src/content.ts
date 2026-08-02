@@ -1,6 +1,6 @@
-import type { ExtensionMessage } from './shared/types';
-import { Picker } from './ui/picker';
-import { showToast } from './ui/toast';
+import type { ExtensionMessage } from "./shared/types";
+import { Picker } from "./ui/picker";
+import { showToast } from "./ui/toast";
 
 /**
  * Content Script
@@ -10,21 +10,23 @@ import { showToast } from './ui/toast';
  * - Toast notifications
  */
 
-console.log('Markdown Precision Saver content script loaded');
+console.log("Markdown Precision Saver content script loaded");
 
 // Global picker instance
 let picker: Picker | null = null;
 
 // Listen for messages from background script
-chrome.runtime.onMessage.addListener((message: ExtensionMessage, sender, sendResponse) => {
-  if (message.type === 'EXPORT_PAGE') {
-    handleExportPage();
-  } else if (message.type === 'CONFIGURE_SITE') {
-    handleConfigureSite();
-  }
+chrome.runtime.onMessage.addListener(
+  (message: ExtensionMessage, _sender, _sendResponse) => {
+    if (message.type === "EXPORT_PAGE") {
+      handleExportPage();
+    } else if (message.type === "CONFIGURE_SITE") {
+      handleConfigureSite();
+    }
 
-  return false;
-});
+    return false;
+  },
+);
 
 /**
  * Handles the page export flow (Scenario A)
@@ -41,18 +43,17 @@ async function handleExportPage() {
     await navigator.clipboard.writeText(markdown);
 
     // Show success toast
-    showToast('Markdown Copied!');
+    showToast("Markdown Copied!");
 
     // Notify background script
     const message: ExtensionMessage = {
-      type: 'EXPORT_COMPLETE',
-      markdown
+      type: "EXPORT_COMPLETE",
+      markdown,
     };
     chrome.runtime.sendMessage(message);
-
   } catch (error) {
-    console.error('Export failed:', error);
-    showToast('Export failed. See console for details.');
+    console.error("Export failed:", error);
+    showToast("Export failed. See console for details.");
   }
 }
 
@@ -60,14 +61,16 @@ async function handleExportPage() {
  * Activates the picker UI for site configuration (Scenario B)
  */
 function handleConfigureSite() {
-  console.log('Activating picker mode');
+  console.log("Activating picker mode");
 
   if (!picker) {
     picker = new Picker();
   }
 
   picker.activate();
-  showToast('Configuration mode activated. Click an element to start.', { type: 'info' });
+  showToast("Configuration mode activated. Click an element to start.", {
+    type: "info",
+  });
 }
 
 /**
@@ -80,4 +83,3 @@ function generateMarkdown(): string {
 
   return `# ${title}\n\n**Source:** ${url}\n\n[Content will be extracted here based on SiteProfile]`;
 }
-

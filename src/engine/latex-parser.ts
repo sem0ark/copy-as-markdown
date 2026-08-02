@@ -16,9 +16,9 @@ export function isLatexElement(element: Element): boolean {
  */
 export function isKatexElement(element: Element): boolean {
   return (
-    element.classList.contains('katex') ||
-    element.classList.contains('katex-mathml') ||
-    element.classList.contains('katex-html')
+    element.classList.contains("katex") ||
+    element.classList.contains("katex-mathml") ||
+    element.classList.contains("katex-html")
   );
 }
 
@@ -28,9 +28,9 @@ export function isKatexElement(element: Element): boolean {
  */
 export function isMathJaxElement(element: Element): boolean {
   return (
-    element.tagName === 'MJX-CONTAINER' ||
-    element.classList.contains('MathJax') ||
-    element.classList.contains('mjx-container')
+    element.tagName === "MJX-CONTAINER" ||
+    element.classList.contains("MathJax") ||
+    element.classList.contains("mjx-container")
   );
 }
 
@@ -55,12 +55,14 @@ export function extractLatex(element: Element): string | null {
  * Prioritizes <annotation encoding="application/x-tex"> tags for accuracy.
  */
 function extractKatexLatex(element: Element): string | null {
-  const annotation = element.querySelector('annotation[encoding="application/x-tex"]');
+  const annotation = element.querySelector(
+    'annotation[encoding="application/x-tex"]',
+  );
   if (annotation?.textContent) {
     return annotation.textContent.trim();
   }
 
-  const mathmlAnnotation = element.querySelector('math annotation');
+  const mathmlAnnotation = element.querySelector("math annotation");
   if (mathmlAnnotation?.textContent) {
     return mathmlAnnotation.textContent.trim();
   }
@@ -78,17 +80,21 @@ function extractMathJaxLatex(element: Element): string | null {
     return script.textContent.trim();
   }
 
-  const scriptDisplay = element.querySelector('script[type="math/tex; mode=display"]');
+  const scriptDisplay = element.querySelector(
+    'script[type="math/tex; mode=display"]',
+  );
   if (scriptDisplay?.textContent) {
     return scriptDisplay.textContent.trim();
   }
 
-  const texAttr = element.getAttribute('data-tex');
+  const texAttr = element.getAttribute("data-tex");
   if (texAttr) {
     return texAttr.trim();
   }
 
-  const annotation = element.querySelector('annotation[encoding="application/x-tex"]');
+  const annotation = element.querySelector(
+    'annotation[encoding="application/x-tex"]',
+  );
   if (annotation?.textContent) {
     return annotation.textContent.trim();
   }
@@ -101,19 +107,25 @@ function extractMathJaxLatex(element: Element): string | null {
  * Display math uses $$ delimiters, inline uses $.
  */
 export function isDisplayMath(element: Element): boolean {
-  const displayClasses = ['katex-display', 'mjx-container-display', 'MathJax_Display'];
+  const displayClasses = [
+    "katex-display",
+    "mjx-container-display",
+    "MathJax_Display",
+  ];
 
-  if (displayClasses.some(cls => element.classList.contains(cls))) {
+  if (displayClasses.some((cls) => element.classList.contains(cls))) {
     return true;
   }
 
-  const scriptDisplay = element.querySelector('script[type="math/tex; mode=display"]');
+  const scriptDisplay = element.querySelector(
+    'script[type="math/tex; mode=display"]',
+  );
   if (scriptDisplay) {
     return true;
   }
 
-  const display = element.getAttribute('display');
-  if (display === 'block' || display === 'true') {
+  const display = element.getAttribute("display");
+  if (display === "block" || display === "true") {
     return true;
   }
 
@@ -127,7 +139,7 @@ export function isDisplayMath(element: Element): boolean {
  */
 export function wrapLatex(tex: string, isDisplay: boolean): string {
   if (isDisplay) {
-    return '$$' + '{' + tex + '}' + '$$';
+    return "$$" + "{" + tex + "}" + "$$";
   }
-  return '$' + '{' + tex + '}' + '$';
+  return "$" + "{" + tex + "}" + "$";
 }

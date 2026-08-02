@@ -1,4 +1,4 @@
-import type { ExportNode, SiteProfile } from './types';
+import type { ExportNode, SiteProfile } from "./types";
 
 /**
  * Finds a node in the ExportNode tree by its unique ID.
@@ -6,7 +6,10 @@ import type { ExportNode, SiteProfile } from './types';
  * @param id - The unique identifier to search for
  * @returns The matching ExportNode or undefined if not found
  */
-export function findNodeById(root: ExportNode, id: string): ExportNode | undefined {
+export function findNodeById(
+  root: ExportNode,
+  id: string,
+): ExportNode | undefined {
   if (root.id === id) {
     return root;
   }
@@ -38,18 +41,18 @@ export function generateNodeId(): string {
 export function validateSiteProfile(profile: SiteProfile): string[] {
   const errors: string[] = [];
 
-  if (!profile.domain || typeof profile.domain !== 'string') {
-    errors.push('Domain must be a non-empty string');
+  if (!profile.domain || typeof profile.domain !== "string") {
+    errors.push("Domain must be a non-empty string");
   }
 
   if (!profile.root) {
-    errors.push('Root ExportNode is required');
+    errors.push("Root ExportNode is required");
   } else {
     errors.push(...validateExportNode(profile.root, new Set()));
   }
 
-  if (typeof profile.updatedAt !== 'number' || profile.updatedAt <= 0) {
-    errors.push('updatedAt must be a positive number');
+  if (typeof profile.updatedAt !== "number" || profile.updatedAt <= 0) {
+    errors.push("updatedAt must be a positive number");
   }
 
   return errors;
@@ -64,28 +67,35 @@ export function validateSiteProfile(profile: SiteProfile): string[] {
 function validateExportNode(node: ExportNode, seenIds: Set<string>): string[] {
   const errors: string[] = [];
 
-  if (!node.id || typeof node.id !== 'string') {
-    errors.push('ExportNode ID must be a non-empty string');
+  if (!node.id || typeof node.id !== "string") {
+    errors.push("ExportNode ID must be a non-empty string");
   } else if (seenIds.has(node.id)) {
     errors.push(`Duplicate node ID found: ${node.id}`);
   } else {
     seenIds.add(node.id);
   }
 
-  if (!node.selector || typeof node.selector !== 'string') {
-    errors.push(`Node ${node.id || 'unknown'} must have a non-empty selector`);
+  if (!node.selector || typeof node.selector !== "string") {
+    errors.push(`Node ${node.id || "unknown"} must have a non-empty selector`);
   }
 
-  if (!['include', 'ignore', 'template'].includes(node.action)) {
-    errors.push(`Node ${node.id || 'unknown'} has invalid action: ${node.action}`);
+  if (!["include", "ignore", "template"].includes(node.action)) {
+    errors.push(
+      `Node ${node.id || "unknown"} has invalid action: ${node.action}`,
+    );
   }
 
-  if (node.action === 'template' && (!node.template || typeof node.template !== 'string')) {
-    errors.push(`Node ${node.id || 'unknown'} with action 'template' must have a template string`);
+  if (
+    node.action === "template" &&
+    (!node.template || typeof node.template !== "string")
+  ) {
+    errors.push(
+      `Node ${node.id || "unknown"} with action 'template' must have a template string`,
+    );
   }
 
   if (!Array.isArray(node.children)) {
-    errors.push(`Node ${node.id || 'unknown'} children must be an array`);
+    errors.push(`Node ${node.id || "unknown"} children must be an array`);
   } else {
     for (const child of node.children) {
       errors.push(...validateExportNode(child, seenIds));

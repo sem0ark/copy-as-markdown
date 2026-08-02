@@ -1,11 +1,11 @@
-import type { SiteProfile, StorageSchema } from '../shared/types';
+import type { SiteProfile } from "../shared/types";
 
 /**
  * Typed wrapper for chrome.storage.local
  * Manages SiteProfile persistence
  */
 
-const STORAGE_KEY = 'profiles';
+const STORAGE_KEY = "profiles";
 
 /**
  * Retrieves the SiteProfile for a given domain

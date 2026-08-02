@@ -13,13 +13,13 @@ export interface TemplateContext {
  */
 export function applyTemplate(
   template: string,
-  context: TemplateContext
+  context: TemplateContext,
 ): string {
   let result = template;
 
   // Replace all placeholders in the format {{key}}
   for (const [key, value] of Object.entries(context)) {
-    const placeholder = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
+    const placeholder = new RegExp(`\\{\\{${key}\\}\\}`, "g");
     result = result.replace(placeholder, value);
   }
 
@@ -39,18 +39,21 @@ export function validateTemplate(template: string): {
 
   // Find all {{...}} patterns
   const regex = /\{\{([^}]*)\}\}/g;
-  let match;
+  let match: RegExpExecArray | null = null;
 
-  while ((match = regex.exec(template)) !== null) {
+  match = regex.exec(template);
+  while (match !== null) {
     const placeholder = match[1].trim();
 
     if (placeholder.length === 0) {
-      errors.push('Empty placeholder found: {{}}');
+      errors.push("Empty placeholder found: {{}}");
     }
 
     if (placeholder.length > 0) {
       placeholders.push(placeholder);
     }
+
+    match = regex.exec(template);
   }
 
   // Check for unclosed placeholders
@@ -58,7 +61,7 @@ export function validateTemplate(template: string): {
   const closeCount = (template.match(/\}\}/g) || []).length;
 
   if (openCount !== closeCount) {
-    errors.push('Unmatched braces in template');
+    errors.push("Unmatched braces in template");
   }
 
   return {

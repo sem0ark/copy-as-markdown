@@ -1,6 +1,6 @@
-import TurndownService from 'turndown';
-import { gfm } from 'turndown-plugin-gfm';
-import { extractLatex, isDisplayMath, wrapLatex } from './latex-parser';
+import TurndownService from "turndown";
+import { gfm } from "turndown-plugin-gfm";
+import { extractLatex, isDisplayMath, wrapLatex } from "./latex-parser";
 
 /**
  * Centralized Turndown.js configuration
@@ -25,19 +25,19 @@ export function getTurndownService(): TurndownService {
  */
 function createTurndownService(): TurndownService {
   const service = new TurndownService({
-    headingStyle: 'atx',
-    codeBlockStyle: 'fenced',
-    bulletListMarker: '-',
-    emDelimiter: '*',
-    strongDelimiter: '**',
-    linkStyle: 'inlined',
-    linkReferenceStyle: 'full',
+    headingStyle: "atx",
+    codeBlockStyle: "fenced",
+    bulletListMarker: "-",
+    emDelimiter: "*",
+    strongDelimiter: "**",
+    linkStyle: "inlined",
+    linkReferenceStyle: "full",
   });
 
   service.use(gfm);
 
   // Keep custom elements so our rules can process them
-  service.keep(['mjx-container']);
+  service.keep(["mjx-container"]);
 
   addLatexRule(service);
   addImageRule(service);
@@ -50,21 +50,21 @@ function createTurndownService(): TurndownService {
  * Converts LaTeX containers to Obsidian-style $...$ or $$...$$ format.
  */
 function addLatexRule(service: TurndownService): void {
-  service.addRule('latex', {
+  service.addRule("latex", {
     filter: (node) => {
       if (node.nodeType !== 1) return false;
       const element = node as Element;
       const tagName = element.nodeName.toLowerCase();
 
       const isMathJax =
-        tagName === 'mjx-container' ||
-        element.classList.contains('MathJax') ||
-        element.classList.contains('mjx-container');
+        tagName === "mjx-container" ||
+        element.classList.contains("MathJax") ||
+        element.classList.contains("mjx-container");
 
       const isKatex =
-        element.classList.contains('katex') ||
-        element.classList.contains('katex-mathml') ||
-        element.classList.contains('katex-html');
+        element.classList.contains("katex") ||
+        element.classList.contains("katex-mathml") ||
+        element.classList.contains("katex-html");
 
       return isMathJax || isKatex;
     },
@@ -88,15 +88,16 @@ function addLatexRule(service: TurndownService): void {
  * Converts relative URLs to absolute URLs based on the document's base URL.
  */
 function addImageRule(service: TurndownService): void {
-  service.addRule('image', {
-    filter: 'img',
-    replacement: (content, node) => {
+  service.addRule("image", {
+    filter: "img",
+    replacement: (_content, node) => {
       const element = node as HTMLImageElement;
-      const alt = element.getAttribute('alt') || '';
-      let src = element.getAttribute('src') || '';
+      const alt = element.getAttribute("alt") || "";
+      let src = element.getAttribute("src") || "";
 
       if (src && !isAbsoluteUrl(src)) {
-        const baseUrl = element.ownerDocument?.location?.href || element.baseURI;
+        const baseUrl =
+          element.ownerDocument?.location?.href || element.baseURI;
         if (baseUrl) {
           src = resolveUrl(src, baseUrl);
         }
@@ -115,7 +116,7 @@ function isAbsoluteUrl(url: string): boolean {
     new URL(url);
     return true;
   } catch {
-    return url.startsWith('//') || /^https?:\/\//i.test(url);
+    return url.startsWith("//") || /^https?:\/\//i.test(url);
   }
 }
 

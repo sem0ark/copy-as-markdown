@@ -10,7 +10,7 @@ export interface ExportNode {
   selector: string;
 
   /** Action to take on the matched element */
-  action: 'include' | 'ignore' | 'template';
+  action: "include" | "ignore" | "template";
 
   /** Optional Markdown template string using {{content}} placeholder */
   template?: string;
@@ -37,10 +37,10 @@ export interface SiteProfile {
  * Message types for communication between background and content scripts.
  */
 export type ExtensionMessage =
-  | { type: 'EXPORT_PAGE' }
-  | { type: 'CONFIGURE_SITE' }
-  | { type: 'EXPORT_COMPLETE'; markdown: string }
-  | { type: 'SHOW_TOAST'; message: string };
+  | { type: "EXPORT_PAGE" }
+  | { type: "CONFIGURE_SITE" }
+  | { type: "EXPORT_COMPLETE"; markdown: string }
+  | { type: "SHOW_TOAST"; message: string };
 
 /**
  * Storage schema for chrome.storage.local
