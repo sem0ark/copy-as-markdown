@@ -134,6 +134,51 @@ function addImageRule(service: TurndownService): void {
 }
 
 /**
+ * Cleans table cells by removing excessive whitespace and newlines from HTML.
+ * This preprocessing step ensures table cells don't have formatting issues.
+ */
+function cleanTableCells(element: Element): void {
+  const cells = element.querySelectorAll("td, th");
+  for (const cell of cells) {
+    // Get the text content and clean it
+    const textContent = cell.textContent || "";
+    const cleanedText = textContent
+      .replace(/\n+/g, " ") // Replace newlines with spaces
+      .replace(/\s+/g, " ") // Collapse multiple spaces
+      .trim();
+
+    // Replace the cell's content with cleaned text
+    // Preserve any child elements that might have formatting
+    if (cell.children.length === 0) {
+      // Simple text-only cell - just replace
+      cell.textContent = cleanedText;
+    } else {
+      // Has child elements - clean text nodes only
+      const walker = document.createTreeWalker(
+        cell,
+        NodeFilter.SHOW_TEXT,
+        null,
+      );
+
+      const textNodes: Text[] = [];
+      let node = walker.nextNode();
+      while (node) {
+        textNodes.push(node as Text);
+        node = walker.nextNode();
+      }
+
+      for (const textNode of textNodes) {
+        const cleaned = (textNode.textContent || "")
+          .replace(/\n+/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+        textNode.textContent = cleaned;
+      }
+    }
+  }
+}
+
+/**
  * Checks if a URL is absolute (has a protocol).
  */
 function isAbsoluteUrl(url: string): boolean {
@@ -161,12 +206,21 @@ function resolveUrl(relativeUrl: string, baseUrl: string): string {
  */
 export function htmlToMarkdown(html: string): string {
   const service = getTurndownService();
-  return service.turndown(html);
+
+  // Parse HTML and clean table cells before conversion
+  const tempDiv = document.createElement("div");
+  tempDiv.innerHTML = html;
+  cleanTableCells(tempDiv);
+
+  return service.turndown(tempDiv.innerHTML);
 }
 
 /**
  * Converts a DOM element to Markdown
  */
 export function elementToMarkdown(element: Element): string {
-  return htmlToMarkdown(element.innerHTML);
+  // Clone to avoid mutating the original
+  const clone = element.cloneNode(true) as Element;
+  cleanTableCells(clone);
+  return htmlToMarkdown(clone.innerHTML);
 }
