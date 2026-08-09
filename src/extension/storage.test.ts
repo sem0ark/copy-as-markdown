@@ -41,12 +41,14 @@ describe("storage", () => {
     it("should save a profile to storage", async () => {
       const profile: SiteProfile = {
         domain: "example.com",
-        root: {
-          id: "root",
-          selector: "body",
-          action: "include",
-          children: [],
-        },
+        roots: [
+          {
+            id: "root",
+            selector: "body",
+            action: "include",
+            children: [],
+          },
+        ],
         updatedAt: Date.now(),
       };
 
@@ -55,7 +57,7 @@ describe("storage", () => {
       const retrieved = await getProfile("example.com");
       expect(retrieved).toMatchObject({
         domain: "example.com",
-        root: profile.root,
+        roots: profile.roots,
       });
       expect(retrieved?.updatedAt).toBeGreaterThan(0);
     });
@@ -63,12 +65,14 @@ describe("storage", () => {
     it("should update updatedAt timestamp on save", async () => {
       const profile: SiteProfile = {
         domain: "example.com",
-        root: {
-          id: "root",
-          selector: "body",
-          action: "include",
-          children: [],
-        },
+        roots: [
+          {
+            id: "root",
+            selector: "body",
+            action: "include",
+            children: [],
+          },
+        ],
         updatedAt: 1000,
       };
 
@@ -82,24 +86,28 @@ describe("storage", () => {
     it("should overwrite existing profile for the same domain", async () => {
       const profile1: SiteProfile = {
         domain: "example.com",
-        root: {
-          id: "root-1",
-          selector: "body",
-          action: "include",
-          children: [],
-        },
+        roots: [
+          {
+            id: "root-1",
+            selector: "body",
+            action: "include",
+            children: [],
+          },
+        ],
         updatedAt: Date.now(),
       };
 
       const profile2: SiteProfile = {
         domain: "example.com",
-        root: {
-          id: "root-2",
-          selector: "article",
-          action: "template",
-          template: "# {{content}}",
-          children: [],
-        },
+        roots: [
+          {
+            id: "root-2",
+            selector: "article",
+            action: "template",
+            template: "# {{content}}",
+            children: [],
+          },
+        ],
         updatedAt: Date.now(),
       };
 
@@ -107,8 +115,36 @@ describe("storage", () => {
       await saveProfile(profile2);
 
       const retrieved = await getProfile("example.com");
-      expect(retrieved?.root.id).toBe("root-2");
-      expect(retrieved?.root.selector).toBe("article");
+      expect(retrieved?.roots[0].id).toBe("root-2");
+      expect(retrieved?.roots[0].selector).toBe("article");
+    });
+
+    it("should support multiple roots", async () => {
+      const profile: SiteProfile = {
+        domain: "multi-root.com",
+        roots: [
+          {
+            id: "root-1",
+            selector: "article",
+            action: "include",
+            children: [],
+          },
+          {
+            id: "root-2",
+            selector: "aside.sidebar",
+            action: "include",
+            children: [],
+          },
+        ],
+        updatedAt: Date.now(),
+      };
+
+      await saveProfile(profile);
+
+      const retrieved = await getProfile("multi-root.com");
+      expect(retrieved?.roots).toHaveLength(2);
+      expect(retrieved?.roots[0].selector).toBe("article");
+      expect(retrieved?.roots[1].selector).toBe("aside.sidebar");
     });
   });
 
@@ -121,12 +157,14 @@ describe("storage", () => {
     it("should retrieve a saved profile", async () => {
       const profile: SiteProfile = {
         domain: "test.com",
-        root: {
-          id: "root",
-          selector: "main",
-          action: "include",
-          children: [],
-        },
+        roots: [
+          {
+            id: "root",
+            selector: "main",
+            action: "include",
+            children: [],
+          },
+        ],
         updatedAt: Date.now(),
       };
 
@@ -135,7 +173,7 @@ describe("storage", () => {
 
       expect(retrieved).toMatchObject({
         domain: "test.com",
-        root: profile.root,
+        roots: profile.roots,
       });
     });
   });
@@ -144,12 +182,14 @@ describe("storage", () => {
     it("should delete a profile from storage", async () => {
       const profile: SiteProfile = {
         domain: "delete-me.com",
-        root: {
-          id: "root",
-          selector: "body",
-          action: "include",
-          children: [],
-        },
+        roots: [
+          {
+            id: "root",
+            selector: "body",
+            action: "include",
+            children: [],
+          },
+        ],
         updatedAt: Date.now(),
       };
 
@@ -163,23 +203,27 @@ describe("storage", () => {
     it("should not affect other domains when deleting", async () => {
       const profile1: SiteProfile = {
         domain: "keep-me.com",
-        root: {
-          id: "root-1",
-          selector: "body",
-          action: "include",
-          children: [],
-        },
+        roots: [
+          {
+            id: "root-1",
+            selector: "body",
+            action: "include",
+            children: [],
+          },
+        ],
         updatedAt: Date.now(),
       };
 
       const profile2: SiteProfile = {
         domain: "delete-me.com",
-        root: {
-          id: "root-2",
-          selector: "article",
-          action: "include",
-          children: [],
-        },
+        roots: [
+          {
+            id: "root-2",
+            selector: "article",
+            action: "include",
+            children: [],
+          },
+        ],
         updatedAt: Date.now(),
       };
 
@@ -209,23 +253,27 @@ describe("storage", () => {
     it("should list all saved profiles", async () => {
       const profile1: SiteProfile = {
         domain: "site1.com",
-        root: {
-          id: "root-1",
-          selector: "body",
-          action: "include",
-          children: [],
-        },
+        roots: [
+          {
+            id: "root-1",
+            selector: "body",
+            action: "include",
+            children: [],
+          },
+        ],
         updatedAt: Date.now(),
       };
 
       const profile2: SiteProfile = {
         domain: "site2.com",
-        root: {
-          id: "root-2",
-          selector: "article",
-          action: "include",
-          children: [],
-        },
+        roots: [
+          {
+            id: "root-2",
+            selector: "article",
+            action: "include",
+            children: [],
+          },
+        ],
         updatedAt: Date.now(),
       };
 
@@ -247,12 +295,14 @@ describe("storage", () => {
       const existingProfiles: Record<string, SiteProfile> = {
         "old-site.com": {
           domain: "old-site.com",
-          root: {
-            id: "old-root",
-            selector: "body",
-            action: "include",
-            children: [],
-          },
+          roots: [
+            {
+              id: "old-root",
+              selector: "body",
+              action: "include",
+              children: [],
+            },
+          ],
           updatedAt: Date.now(),
         },
       };
@@ -262,12 +312,14 @@ describe("storage", () => {
       // Add a new profile for a different domain
       const newProfile: SiteProfile = {
         domain: "new-site.com",
-        root: {
-          id: "new-root",
-          selector: "article",
-          action: "include",
-          children: [],
-        },
+        roots: [
+          {
+            id: "new-root",
+            selector: "article",
+            action: "include",
+            children: [],
+          },
+        ],
         updatedAt: Date.now(),
       };
 
@@ -292,22 +344,28 @@ describe("storage", () => {
       const profiles: SiteProfile[] = [
         {
           domain: "site-a.com",
-          root: { id: "a", selector: "body", action: "include", children: [] },
+          roots: [
+            { id: "a", selector: "body", action: "include", children: [] },
+          ],
           updatedAt: Date.now(),
         },
         {
           domain: "site-b.com",
-          root: {
-            id: "b",
-            selector: "article",
-            action: "include",
-            children: [],
-          },
+          roots: [
+            {
+              id: "b",
+              selector: "article",
+              action: "include",
+              children: [],
+            },
+          ],
           updatedAt: Date.now(),
         },
         {
           domain: "site-c.com",
-          root: { id: "c", selector: "main", action: "include", children: [] },
+          roots: [
+            { id: "c", selector: "main", action: "include", children: [] },
+          ],
           updatedAt: Date.now(),
         },
       ];
@@ -319,13 +377,15 @@ describe("storage", () => {
       // Update one profile
       const updatedProfile: SiteProfile = {
         domain: "site-b.com",
-        root: {
-          id: "b-updated",
-          selector: "section",
-          action: "template",
-          template: "{{content}}",
-          children: [],
-        },
+        roots: [
+          {
+            id: "b-updated",
+            selector: "section",
+            action: "template",
+            template: "{{content}}",
+            children: [],
+          },
+        ],
         updatedAt: Date.now(),
       };
 
@@ -337,14 +397,14 @@ describe("storage", () => {
 
       // Verify the update was applied
       const updated = await getProfile("site-b.com");
-      expect(updated?.root.id).toBe("b-updated");
-      expect(updated?.root.selector).toBe("section");
+      expect(updated?.roots[0].id).toBe("b-updated");
+      expect(updated?.roots[0].selector).toBe("section");
 
       // Verify others remain unchanged
       const siteA = await getProfile("site-a.com");
       const siteC = await getProfile("site-c.com");
-      expect(siteA?.root.selector).toBe("body");
-      expect(siteC?.root.selector).toBe("main");
+      expect(siteA?.roots[0].selector).toBe("body");
+      expect(siteC?.roots[0].selector).toBe("main");
     });
   });
 });

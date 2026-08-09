@@ -35,9 +35,23 @@ async function saveConfig() {
 
     // Validate each profile
     for (const [domain, profile] of Object.entries(config.profiles)) {
-      const p = profile as any;
-      if (!p.domain || !p.root || !p.root.selector || !p.root.action) {
-        throw new Error(`Invalid profile for ${domain}`);
+      if (
+        !profile.domain ||
+        !Array.isArray(profile.roots) ||
+        profile.roots.length === 0
+      ) {
+        throw new Error(
+          `Invalid profile for ${domain}: missing domain or roots`,
+        );
+      }
+
+      // Validate each root
+      for (const root of profile.roots) {
+        if (!root.selector || !root.action) {
+          throw new Error(
+            `Invalid root in profile for ${domain}: missing selector or action`,
+          );
+        }
       }
     }
 

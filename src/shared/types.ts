@@ -26,8 +26,8 @@ export interface SiteProfile {
   /** Domain pattern (e.g., "example.com" or "*.example.com") */
   domain: string;
 
-  /** Root node of the export tree */
-  root: ExportNode;
+  /** Root nodes of the export tree (supports multiple independent roots) */
+  roots: ExportNode[];
 
   /** Last updated timestamp */
   updatedAt: number;

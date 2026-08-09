@@ -4,5 +4,14 @@
     "enabled": true,
     "indentStyle": "space",
     "indentWidth": 2
+  },
+  "linter": {
+    "includes": [
+      "**/*.ts",
+      "**/*.tsx",
+      "**/*.js",
+      "**/*.jsx",
+      "!**/*.test.ts"
+    ]
   }
 }

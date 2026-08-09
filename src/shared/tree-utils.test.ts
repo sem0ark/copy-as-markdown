@@ -123,12 +123,14 @@ describe("tree-utils", () => {
       validProfile = {
         domain: "example.com",
         updatedAt: Date.now(),
-        root: {
-          id: "root",
-          selector: "body",
-          action: "include",
-          children: [],
-        },
+        roots: [
+          {
+            id: "root",
+            selector: "body",
+            action: "include",
+            children: [],
+          },
+        ],
       };
     });
 
@@ -156,16 +158,28 @@ describe("tree-utils", () => {
       expect(errors.some((e) => e.includes("Domain"))).toBe(true);
     });
 
-    it("should reject profile with missing root", () => {
+    it("should reject profile with missing roots array", () => {
       // Arrange
-      const invalidProfile = { ...validProfile, root: undefined as any };
+      const invalidProfile = { ...validProfile, roots: undefined as any };
 
       // Act
       const errors = validateSiteProfile(invalidProfile);
 
       // Assert
       expect(errors.length).toBeGreaterThan(0);
-      expect(errors.some((e) => e.includes("Root"))).toBe(true);
+      expect(errors.some((e) => e.includes("roots"))).toBe(true);
+    });
+
+    it("should reject profile with empty roots array", () => {
+      // Arrange
+      validProfile.roots = [];
+
+      // Act
+      const errors = validateSiteProfile(validProfile);
+
+      // Assert
+      expect(errors.length).toBeGreaterThan(0);
+      expect(errors.some((e) => e.includes("At least one root"))).toBe(true);
     });
 
     it("should reject profile with invalid updatedAt", () => {
@@ -182,7 +196,7 @@ describe("tree-utils", () => {
 
     it("should reject node with missing ID", () => {
       // Arrange
-      validProfile.root.id = "";
+      validProfile.roots[0].id = "";
 
       // Act
       const errors = validateSiteProfile(validProfile);
@@ -194,7 +208,7 @@ describe("tree-utils", () => {
 
     it("should reject node with missing selector", () => {
       // Arrange
-      validProfile.root.selector = "";
+      validProfile.roots[0].selector = "";
 
       // Act
       const errors = validateSiteProfile(validProfile);
@@ -206,7 +220,7 @@ describe("tree-utils", () => {
 
     it("should reject node with invalid action", () => {
       // Arrange
-      validProfile.root.action = "invalid" as any;
+      validProfile.roots[0].action = "invalid" as any;
 
       // Act
       const errors = validateSiteProfile(validProfile);
@@ -218,8 +232,8 @@ describe("tree-utils", () => {
 
     it("should reject template action without template string", () => {
       // Arrange
-      validProfile.root.action = "template";
-      validProfile.root.template = undefined;
+      validProfile.roots[0].action = "template";
+      validProfile.roots[0].template = undefined;
 
       // Act
       const errors = validateSiteProfile(validProfile);
@@ -231,7 +245,7 @@ describe("tree-utils", () => {
 
     it("should detect duplicate node IDs in tree", () => {
       // Arrange
-      validProfile.root.children = [
+      validProfile.roots[0].children = [
         {
           id: "child1",
           selector: ".class1",
@@ -256,39 +270,90 @@ describe("tree-utils", () => {
 
     it("should validate complex nested structure", () => {
       // Arrange
-      validProfile.root = {
-        id: "root",
-        selector: "body",
-        action: "include",
-        children: [
-          {
-            id: "main",
-            selector: "main",
-            action: "include",
-            children: [
-              {
-                id: "article",
-                selector: "article",
-                action: "include",
-                children: [],
-              },
-            ],
-          },
-          {
-            id: "footer",
-            selector: "footer",
-            action: "template",
-            template: "> {{content}}",
-            children: [],
-          },
-        ],
-      };
+      validProfile.roots = [
+        {
+          id: "root",
+          selector: "body",
+          action: "include",
+          children: [
+            {
+              id: "main",
+              selector: "main",
+              action: "include",
+              children: [
+                {
+                  id: "article",
+                  selector: "article",
+                  action: "include",
+                  children: [],
+                },
+              ],
+            },
+            {
+              id: "footer",
+              selector: "footer",
+              action: "template",
+              template: "> {{content}}",
+              children: [],
+            },
+          ],
+        },
+      ];
 
       // Act
       const errors = validateSiteProfile(validProfile);
 
       // Assert
       expect(errors).toHaveLength(0);
+    });
+
+    it("should validate multiple roots", () => {
+      // Arrange
+      validProfile.roots = [
+        {
+          id: "root-1",
+          selector: "article",
+          action: "include",
+          children: [],
+        },
+        {
+          id: "root-2",
+          selector: "aside",
+          action: "include",
+          children: [],
+        },
+      ];
+
+      // Act
+      const errors = validateSiteProfile(validProfile);
+
+      // Assert
+      expect(errors).toHaveLength(0);
+    });
+
+    it("should detect duplicate IDs across multiple roots", () => {
+      // Arrange
+      validProfile.roots = [
+        {
+          id: "duplicate",
+          selector: "article",
+          action: "include",
+          children: [],
+        },
+        {
+          id: "duplicate", // Duplicate ID in different root
+          selector: "aside",
+          action: "include",
+          children: [],
+        },
+      ];
+
+      // Act
+      const errors = validateSiteProfile(validProfile);
+
+      // Assert
+      expect(errors.length).toBeGreaterThan(0);
+      expect(errors.some((e) => e.includes("Duplicate"))).toBe(true);
     });
   });
 
@@ -494,20 +559,22 @@ describe("tree-utils", () => {
       const profile: SiteProfile = {
         domain: "example.com",
         updatedAt: 1234567890,
-        root: {
-          id: "root",
-          selector: "body",
-          action: "include",
-          children: [
-            {
-              id: "child",
-              selector: ".content",
-              action: "template",
-              template: "# {{content}}",
-              children: [],
-            },
-          ],
-        },
+        roots: [
+          {
+            id: "root",
+            selector: "body",
+            action: "include",
+            children: [
+              {
+                id: "child",
+                selector: ".content",
+                action: "template",
+                template: "# {{content}}",
+                children: [],
+              },
+            ],
+          },
+        ],
       };
 
       // Act
@@ -517,8 +584,8 @@ describe("tree-utils", () => {
       // Assert
       expect(deserialized).toEqual(profile);
       expect(deserialized.domain).toBe("example.com");
-      expect(deserialized.root.children).toHaveLength(1);
-      expect(deserialized.root.children[0].template).toBe("# {{content}}");
+      expect(deserialized.roots[0].children).toHaveLength(1);
+      expect(deserialized.roots[0].children[0].template).toBe("# {{content}}");
     });
 
     it("should handle empty children arrays", () => {
@@ -526,12 +593,14 @@ describe("tree-utils", () => {
       const profile: SiteProfile = {
         domain: "test.com",
         updatedAt: Date.now(),
-        root: {
-          id: "root",
-          selector: "body",
-          action: "include",
-          children: [],
-        },
+        roots: [
+          {
+            id: "root",
+            selector: "body",
+            action: "include",
+            children: [],
+          },
+        ],
       };
 
       // Act
@@ -539,7 +608,7 @@ describe("tree-utils", () => {
       const deserialized: SiteProfile = JSON.parse(json);
 
       // Assert
-      expect(deserialized.root.children).toEqual([]);
+      expect(deserialized.roots[0].children).toEqual([]);
     });
 
     it("should preserve all ExportNode fields through serialization", () => {

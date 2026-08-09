@@ -68,19 +68,24 @@ Pure TypeScript logic that operates on DOM clones. This layer is strictly decoup
 Simplistic Vanilla TS components injected into the web page.
 
 #### `picker.ts` (Text Input Selector UI)
-- **Role**: Provides a text-based CSS selector input interface with visual feedback.
-- **Components**: Manages input panel, highlighter, and action menu.
-- **UI**: Fixed panel at top center with text input for CSS selectors.
+- **Role**: Provides a text-based CSS selector input interface with visual feedback and multiple root management.
+- **Components**: Manages input panel, highlighter, root list display, and action menu.
+- **UI**: Fixed panel at top center with:
+    - List of existing roots (clickable boxes with hover highlighting)
+    - Remove button (x) for each root
+    - Separator
+    - Text input for adding new root CSS selectors
 - **Features**:
     - Real-time element highlighting as user types selector
     - Status indicator showing number of matched elements
     - Support for iframe drilling with `>>>` syntax (e.g., `iframe#doc >>> article`)
     - Validates selectors and shows error messages
     - Highlights first matched element if multiple matches
-- **Actions**: Include, Ignore, Template, Cancel buttons.
-- **Callbacks**: Provides `onNodeCreated` and `onCancel` hooks for integration with content script.
-- **Keyboard**: Enter to confirm, ESC to cancel.
-- **Context Menu Integration**: Can be triggered via right-click "Use as Export Root".
+- **Actions**: Include, Ignore, Template buttons for new roots.
+- **Control Buttons**: Done (saves and closes), Cancel (discards and closes).
+- **Callbacks**: Provides `onNodeCreated`, `onNodeRemoved`, `onComplete`, and `onCancel` hooks.
+- **Keyboard**: Enter to confirm current selector, ESC to cancel.
+- **Use Case**: Configure sites with content split across multiple containers or iframes (e.g., course heading + iframe content).
 
 #### `selector-gen.ts` (CSS Selector Generator)
 - **Strategy**: Generates stable CSS selectors with priority: ID > Unique Class > nth-of-type path.
@@ -170,7 +175,8 @@ export interface ExportNode {
 
 export interface SiteProfile {
   domain: string;             // URL Prefix/Hostname
-  root: ExportNode;           // Usually starts at 'body' or 'article'
+  roots: ExportNode[];        // Multiple independent roots (e.g., heading + iframe content)
+  updatedAt: number;          // Last updated timestamp
 }
 ```
 
