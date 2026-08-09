@@ -55,8 +55,6 @@ chrome.runtime.onMessage.addListener(
       handleExportPage();
     } else if (message.type === "CONFIGURE_SITE") {
       handleConfigureSite();
-    } else if (message.type === "SELECT_INSPECTED_ELEMENT") {
-      handleSelectInspectedElement();
     }
 
     return false;
@@ -199,26 +197,6 @@ async function handleConfigureSite() {
       ? `Configuration mode activated. ${currentRoots.length} existing root${currentRoots.length > 1 ? "s" : ""}.`
       : "Configuration mode activated. Add your first root.",
     { type: "info" },
-  );
-}
-
-/**
- * Selects the currently inspected element in DevTools
- */
-function handleSelectInspectedElement() {
-  // Get the element from DevTools inspector
-  // Chrome provides $0 in console, but we need to use a different approach in content script
-  // We'll get the last inspected element using the chrome.devtools API equivalent
-
-  // For now, show instructions to user
-  showToast(
-    "Right-click on the element in the page (not DevTools) and select 'Use as Export Root'",
-    { type: "info" },
-  );
-
-  // Alternative: Use the current mouse position
-  console.log(
-    "[DevTools] To use an inspected element, right-click it on the page and select 'Use as Export Root'",
   );
 }
 

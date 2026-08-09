@@ -39,7 +39,6 @@ export interface SiteProfile {
 export type ExtensionMessage =
   | { type: "EXPORT_PAGE" }
   | { type: "CONFIGURE_SITE" }
-  | { type: "SELECT_INSPECTED_ELEMENT" }
   | { type: "EXPORT_COMPLETE"; markdown: string }
   | { type: "SHOW_TOAST"; message: string };
 
