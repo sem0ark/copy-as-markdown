@@ -45,10 +45,15 @@ export function validateSiteProfile(profile: SiteProfile): string[] {
     errors.push("Domain must be a non-empty string");
   }
 
-  if (!profile.root) {
-    errors.push("Root ExportNode is required");
+  if (!Array.isArray(profile.roots)) {
+    errors.push("roots must be an array of ExportNodes");
+  } else if (profile.roots.length === 0) {
+    errors.push("At least one root ExportNode is required");
   } else {
-    errors.push(...validateExportNode(profile.root, new Set()));
+    const seenIds = new Set<string>();
+    for (const root of profile.roots) {
+      errors.push(...validateExportNode(root, seenIds));
+    }
   }
 
   if (typeof profile.updatedAt !== "number" || profile.updatedAt <= 0) {

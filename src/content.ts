@@ -5,7 +5,7 @@ import type { ExtensionMessage } from "./shared/types";
 import { Picker } from "./ui/picker";
 import { showToast } from "./ui/toast";
 import { waitForContent } from "./utils/dom-ready";
-import { querySelectorDeep } from "./utils/dom-utils";
+import { querySelectorAllDeep as querySelectorDeepAll } from "./utils/dom-utils";
 import { SPAMonitor, waitForContentWithRetry } from "./utils/spa-monitor";
 
 /**
@@ -107,40 +107,99 @@ async function handleExportPage() {
 /**
  * Activates the picker UI for site configuration (Scenario B)
  */
-function handleConfigureSite() {
+async function handleConfigureSite() {
   console.log("Activating picker mode");
 
   if (!picker) {
     picker = new Picker();
   }
 
-  picker.activate({
-    onNodeCreated: async (node, _element) => {
-      // Save the configuration
-      const domain = getCurrentDomain();
-      const profile = {
-        domain,
-        root: node,
-        updatedAt: Date.now(),
-      };
+  // Get existing profile for this domain
+  const domain = getCurrentDomain();
+  const existingProfile = await getProfile(domain);
+  const currentRoots = existingProfile?.roots || [];
 
-      await chrome.storage.local.set({
-        profiles: {
-          ...(await chrome.storage.local.get("profiles")).profiles,
-          [domain]: profile,
-        },
-      });
+  // Track roots being configured in this session
+  const sessionRoots = [...currentRoots];
 
-      showToast("Configuration saved!", { type: "success" });
+  picker.activate(
+    {
+      onNodeCreated: async (node, _element) => {
+        // Add to session roots
+        sessionRoots.push(node);
+
+        // Save profile with all roots
+        const profile = {
+          domain,
+          roots: sessionRoots,
+          updatedAt: Date.now(),
+        };
+
+        await chrome.storage.local.set({
+          profiles: {
+            ...(await chrome.storage.local.get("profiles")).profiles,
+            [domain]: profile,
+          },
+        });
+
+        console.log(`Root added. Total roots: ${sessionRoots.length}`);
+      },
+      onNodeRemoved: async (index: number) => {
+        // Remove from session roots
+        sessionRoots.splice(index, 1);
+
+        // Save profile with updated roots
+        const profile = {
+          domain,
+          roots: sessionRoots,
+          updatedAt: Date.now(),
+        };
+
+        await chrome.storage.local.set({
+          profiles: {
+            ...(await chrome.storage.local.get("profiles")).profiles,
+            [domain]: profile,
+          },
+        });
+
+        console.log(`Root removed. Total roots: ${sessionRoots.length}`);
+      },
+      onCancel: () => {
+        showToast("Configuration cancelled", { type: "info" });
+      },
+      onComplete: async () => {
+        // Save final profile
+        const profile = {
+          domain,
+          roots: sessionRoots,
+          updatedAt: Date.now(),
+        };
+
+        await chrome.storage.local.set({
+          profiles: {
+            ...(await chrome.storage.local.get("profiles")).profiles,
+            [domain]: profile,
+          },
+        });
+
+        const rootCount = sessionRoots.length;
+        showToast(
+          `Configuration saved! (${rootCount} root${rootCount > 1 ? "s" : ""})`,
+          { type: "success" },
+        );
+      },
     },
-    onCancel: () => {
-      showToast("Configuration cancelled", { type: "info" });
+    {
+      existingRoots: currentRoots,
     },
-  });
+  );
 
-  showToast("Configuration mode activated. Click an element to start.", {
-    type: "info",
-  });
+  showToast(
+    currentRoots.length > 0
+      ? `Configuration mode activated. ${currentRoots.length} existing root${currentRoots.length > 1 ? "s" : ""}.`
+      : "Configuration mode activated. Add your first root.",
+    { type: "info" },
+  );
 }
 
 /**
@@ -180,31 +239,55 @@ async function generateMarkdown(): Promise<string> {
   // Use the configured profile to process the page
   console.log(`Using profile for ${domain}:`, profile);
 
-  // Find the root element using the root selector (supports iframe drilling with >>>)
-  let rootElement = querySelectorDeep(profile.root.selector);
+  const results: string[] = [];
 
-  if (!rootElement) {
-    // Try waiting for the element (it might be loading in a React app)
-    console.warn(
-      `Root element not found immediately: ${profile.root.selector}, waiting...`,
+  // Process each root in the profile
+  for (const root of profile.roots) {
+    // Find all elements matching this root selector (supports iframe drilling with >>>)
+    let rootElements = querySelectorDeepAll(root.selector);
+
+    if (rootElements.length === 0) {
+      // Try waiting for the elements (they might be loading in a React app)
+      console.warn(
+        `Root elements not found immediately: ${root.selector}, waiting...`,
+      );
+
+      await waitForContent({
+        timeout: 5000,
+        minTextNodes: 1,
+        minTextLength: 10,
+      });
+
+      // Try again after waiting
+      rootElements = querySelectorDeepAll(root.selector);
+
+      if (rootElements.length === 0) {
+        console.warn(
+          `Root element not found: ${root.selector}. Skipping this root.`,
+        );
+        continue;
+      }
+    }
+
+    console.log(
+      `Processing ${rootElements.length} element(s) for selector: ${root.selector}`,
     );
 
-    await waitForContent({
-      timeout: 5000,
-      minTextNodes: 1,
-      minTextLength: 10,
-    });
-
-    // Try again after waiting
-    rootElement = querySelectorDeep(profile.root.selector);
-
-    if (!rootElement) {
-      throw new Error(
-        `Root element not found: ${profile.root.selector}. The page structure may have changed. Please reconfigure the site.`,
-      );
+    // Process all matching elements for this root
+    for (const rootElement of rootElements) {
+      const result = processElement(rootElement, root);
+      if (result.trim()) {
+        results.push(result);
+      }
     }
   }
 
-  // Process the element tree according to the profile
-  return processElement(rootElement, profile.root);
+  if (results.length === 0) {
+    throw new Error(
+      "No content was exported. The page structure may have changed. Please reconfigure the site.",
+    );
+  }
+
+  // Join all results with double newline separator
+  return results.join("\n\n");
 }

@@ -145,6 +145,81 @@ describe("turndown-service", () => {
       expect(markdown).toContain("| Bob | 25 |");
     });
 
+    it("should convert tables with newlines in cells", () => {
+      const html = `
+        <table>
+          <thead>
+            <tr>
+              <th>\${i}$</th>
+              <th>\${\\rm SA}\\![i]$</th>
+              <th>\${[\\rm SA]\\![i] - 1}$</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+0
+
+</td>
+              <td>
+
+6
+
+</td>
+              <td>
+
+5
+
+</td>
+            </tr>
+            <tr>
+              <td>
+
+1
+
+</td>
+              <td>
+
+5
+
+</td>
+              <td>
+
+4
+
+</td>
+            </tr>
+          </tbody>
+        </table>
+      `;
+      const markdown = htmlToMarkdown(html);
+
+      // Verify that newlines are removed from cells
+      expect(markdown).not.toMatch(/\|\s*\n\s*0\s*\n\s*\|/);
+      expect(markdown).not.toMatch(/\|\s*\n\s*6\s*\n\s*\|/);
+
+      // Verify cells contain values but on the same line
+      expect(markdown).toContain("| 0 |");
+      expect(markdown).toContain("| 6 |");
+      expect(markdown).toContain("| 5 |");
+    });
+
+    it("should NOT convert tables without thead or th elements", () => {
+      const html = `
+        <table>
+          <tbody>
+            <tr><td>1</td><td>2</td></tr>
+            <tr><td>3</td><td>4</td></tr>
+          </tbody>
+        </table>
+      `;
+      const markdown = htmlToMarkdown(html);
+
+      // Tables without thead/th stay as HTML (limitation of turndown-plugin-gfm)
+      expect(markdown).toContain("<table>");
+      expect(markdown).toContain("<td>");
+    });
+
     it("should convert strikethrough text", () => {
       const html = "<p>This is <del>deleted</del> text.</p>";
       const markdown = htmlToMarkdown(html);
