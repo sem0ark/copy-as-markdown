@@ -20,7 +20,6 @@ This extension is a high-performance utility for transforming web DOM trees into
     - Listens for `chrome.action.onClicked` (The "One-Click" trigger).
     - Manages the Context Menu:
         - "Configure Export" - Activates picker mode on current page
-        - "Use as Export Root" - Quick-select right-clicked element
         - "Open Configuration Editor" - Opens JSON editor in new tab
     - Dispatches messages to the active tab's Content Script.
 

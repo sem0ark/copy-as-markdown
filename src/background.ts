@@ -14,12 +14,6 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 
   chrome.contextMenus.create({
-    id: "select-element",
-    title: "Use as Export Root",
-    contexts: ["all"],
-  });
-
-  chrome.contextMenus.create({
     id: "open-config",
     title: "Open Configuration Editor",
     contexts: ["action"],
@@ -52,16 +46,6 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       await chrome.tabs.sendMessage(tab.id, message);
     } catch (error) {
       console.error("Failed to activate configuration mode:", error);
-    }
-  } else if (info.menuItemId === "select-element") {
-    try {
-      // Send message with selector from inspected element
-      const message: ExtensionMessage = {
-        type: "SELECT_INSPECTED_ELEMENT",
-      };
-      await chrome.tabs.sendMessage(tab.id, message);
-    } catch (error) {
-      console.error("Failed to select inspected element:", error);
     }
   } else if (info.menuItemId === "open-config") {
     // Open configuration editor in new tab
