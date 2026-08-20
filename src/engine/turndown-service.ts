@@ -134,46 +134,20 @@ function addImageRule(service: TurndownService): void {
 }
 
 /**
- * Cleans table cells by removing excessive whitespace and newlines from HTML.
- * This preprocessing step ensures table cells don't have formatting issues.
+ * Flattens block-level elements inside table cells so Turndown processes them
+ * as inline content within a single row.
  */
-function cleanTableCells(element: Element): void {
-  const cells = element.querySelectorAll("td, th");
+function flattenTableCells(root: HTMLElement): void {
+  const cells = root.querySelectorAll("td, th");
+
   for (const cell of cells) {
-    // Get the text content and clean it
-    const textContent = cell.textContent || "";
-    const cleanedText = textContent
-      .replace(/\n+/g, " ") // Replace newlines with spaces
-      .replace(/\s+/g, " ") // Collapse multiple spaces
-      .trim();
+    const blocks = cell.querySelectorAll("p, div");
 
-    // Replace the cell's content with cleaned text
-    // Preserve any child elements that might have formatting
-    if (cell.children.length === 0) {
-      // Simple text-only cell - just replace
-      cell.textContent = cleanedText;
-    } else {
-      // Has child elements - clean text nodes only
-      const walker = document.createTreeWalker(
-        cell,
-        NodeFilter.SHOW_TEXT,
-        null,
-      );
-
-      const textNodes: Text[] = [];
-      let node = walker.nextNode();
-      while (node) {
-        textNodes.push(node as Text);
-        node = walker.nextNode();
+    for (const block of blocks) {
+      if (block.previousElementSibling) {
+        block.before(" ");
       }
-
-      for (const textNode of textNodes) {
-        const cleaned = (textNode.textContent || "")
-          .replace(/\n+/g, " ")
-          .replace(/\s+/g, " ")
-          .trim();
-        textNode.textContent = cleaned;
-      }
+      block.replaceWith(...Array.from(block.childNodes));
     }
   }
 }
@@ -205,22 +179,22 @@ function resolveUrl(relativeUrl: string, baseUrl: string): string {
  * Converts HTML string to Markdown
  */
 export function htmlToMarkdown(html: string): string {
+  const template = document.createElement("template");
+  template.innerHTML = html;
+  const root = document.createElement("div");
+  root.append(template.content.cloneNode(true));
+
+  flattenTableCells(root);
+
   const service = getTurndownService();
-
-  // Parse HTML and clean table cells before conversion
-  const tempDiv = document.createElement("div");
-  tempDiv.innerHTML = html;
-  cleanTableCells(tempDiv);
-
-  return service.turndown(tempDiv.innerHTML);
+  return service.turndown(root.innerHTML);
 }
 
 /**
  * Converts a DOM element to Markdown
  */
 export function elementToMarkdown(element: Element): string {
-  // Clone to avoid mutating the original
-  const clone = element.cloneNode(true) as Element;
-  cleanTableCells(clone);
-  return htmlToMarkdown(clone.innerHTML);
+  const clone = element.cloneNode(true) as HTMLElement;
+  flattenTableCells(clone);
+  return getTurndownService().turndown(clone.innerHTML);
 }

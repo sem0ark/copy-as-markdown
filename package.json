@@ -8,6 +8,7 @@
     "dev": "vite build --watch",
     "watch": "vite build --watch",
     "test": "vitest run",
+    "test:regression": "vitest run src/engine/regression-tests/",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "type-check": "biome check --write ./src",

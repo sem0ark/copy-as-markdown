@@ -35,6 +35,22 @@ test('should find a deeply nested node', () => {
 });
 ```
 
+## Regression Tests
+
+Regression cases live in `src/engine/regression-tests/cases/` as JSON files. Each case
+contains the captured `rawHtml`, an `ExportNode`-shaped `config`, and
+`expectedFragments` that must appear in the processed Markdown.
+
+Run the suite with:
+
+```bash
+pnpm test:regression
+```
+
+New cases are discovered automatically when a `.json` file is added to the cases
+directory. Copy the full HTML from a `[Markdown Export Case]` log, then add an ID,
+description, and the output fragments that describe the expected behavior.
+
 ## Required Test Coverage
 
 ### Data Structure Utilities (shared/)

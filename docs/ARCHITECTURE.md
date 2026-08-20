@@ -51,6 +51,7 @@ Pure TypeScript logic that operates on DOM clones. This layer is strictly decoup
 - **Role**: Singleton instance of Turndown.js.
 - **Config**: GFM enabled; keeps `<img>` tags as remote `src` links.
 - **LaTeX Integration**: Injects custom rules from `latex-rules.ts`.
+- **Table Preprocessing**: Unwraps paragraph and div elements inside table cells before Turndown converts the DOM, keeping cell content on one Markdown table row.
 
 #### `latex-rules.ts`
 - **Role**: Specialized parsers for KaTeX and MathJax.
@@ -137,6 +138,7 @@ The entry point within the web page context.
 - **SPA Support**: Monitors for React/Vue/Angular client-side navigation and waits for content to be ready before export.
 - **Content Readiness**: Uses polling + MutationObserver to detect when dynamically loaded content is ready.
 - **Error Handling**: Displays error toasts if profile root element is not found or export fails.
+- **Regression Diagnostics**: Logs each exported root as a copyable JSON regression fixture.
 
 ### Layer 6: Utility Layer
 **Directory:** `src/utils/`

@@ -204,6 +204,21 @@ describe("turndown-service", () => {
       expect(markdown).toContain("| 5 |");
     });
 
+    it("should flatten block elements inside table cells", () => {
+      const html = `
+        <table>
+          <thead><tr>
+            <th><p><strong>Term</strong></p></th>
+            <th><p>Notes</p> <p>More notes</p></th>
+          </tr></thead>
+        </table>
+      `;
+
+      const markdown = htmlToMarkdown(html);
+
+      expect(markdown).toContain("| **Term** | Notes More notes |");
+    });
+
     it("should NOT convert tables without thead or th elements", () => {
       const html = `
         <table>

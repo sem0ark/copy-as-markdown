@@ -1,7 +1,7 @@
 import { processElement } from "./engine/processor";
 import { elementToMarkdown } from "./engine/turndown-service";
 import { getCurrentDomain, getProfile } from "./extension/storage";
-import type { ExtensionMessage } from "./shared/types";
+import type { ExportNode, ExtensionMessage } from "./shared/types";
 import { Picker } from "./ui/picker";
 import { showToast } from "./ui/toast";
 import { waitForContent } from "./utils/dom-ready";
@@ -75,7 +75,7 @@ async function handleExportPage() {
       });
       if (!ready) {
         showToast("Page content may not be fully loaded. Exporting anyway...", {
-          type: "warning",
+          type: "info",
         });
       } else {
         isContentReady = true;
@@ -211,7 +211,21 @@ async function generateMarkdown(): Promise<string> {
   if (!profile) {
     // No profile configured: export full page body as markdown
     console.log(`No profile found for ${domain}, exporting full page`);
-    return elementToMarkdown(document.body);
+    const markdown = elementToMarkdown(document.body);
+    logMarkdownExportCase(
+      {
+        id: `full-page-${Date.now()}`,
+        description: `Full-page export for ${domain}`,
+        config: {
+          selector: "body",
+          action: "include",
+          children: [],
+        },
+      },
+      document.body.outerHTML,
+      markdown,
+    );
+    return markdown;
   }
 
   // Use the configured profile to process the page
@@ -254,6 +268,20 @@ async function generateMarkdown(): Promise<string> {
     // Process all matching elements for this root
     for (const rootElement of rootElements) {
       const result = processElement(rootElement, root);
+      logMarkdownExportCase(
+        {
+          id: `captured-${Date.now()}`,
+          description: `Captured export for ${domain}: ${root.selector}`,
+          config: {
+            selector: root.selector,
+            action: root.action,
+            ...(root.template ? { template: root.template } : {}),
+            children: root.children,
+          },
+        },
+        rootElement.outerHTML,
+        result,
+      );
       if (result.trim()) {
         results.push(result);
       }
@@ -268,4 +296,30 @@ async function generateMarkdown(): Promise<string> {
 
   // Join all results with double newline separator
   return results.join("\n\n");
+}
+
+/**
+ * Logs a self-contained export case that can be copied into a regression test.
+ */
+function logMarkdownExportCase(
+  input: {
+    id: string;
+    description: string;
+    config: Omit<ExportNode, "id">;
+  },
+  rawHtml: string,
+  outputMarkdown: string,
+): void {
+  console.log("[Markdown Export Case]");
+  console.log(
+    JSON.stringify(
+      {
+        ...input,
+        rawHtml,
+        expectedFragments: outputMarkdown ? [outputMarkdown] : [],
+      },
+      null,
+      2,
+    ),
+  );
 }
