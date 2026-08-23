@@ -196,5 +196,5 @@ export function htmlToMarkdown(html: string): string {
 export function elementToMarkdown(element: Element): string {
   const clone = element.cloneNode(true) as HTMLElement;
   flattenTableCells(clone);
-  return getTurndownService().turndown(clone.innerHTML);
+  return getTurndownService().turndown(clone.outerHTML);
 }
