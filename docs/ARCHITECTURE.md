@@ -51,7 +51,7 @@ Pure TypeScript logic that operates on DOM clones. This layer is strictly decoup
 - **Role**: Singleton instance of Turndown.js.
 - **Config**: GFM enabled; keeps `<img>` tags as remote `src` links.
 - **LaTeX Integration**: Injects custom rules from `latex-rules.ts`.
-- **Table Preprocessing**: Unwraps paragraph and div elements inside table cells before Turndown converts the DOM, keeping cell content on one Markdown table row.
+- **Table Preprocessing**: Removes Office namespace elements, promotes bold first-row `<td>` cells to `<th>`, and unwraps paragraph and div elements inside cells before Turndown converts the DOM. This supports Microsoft Office tables while keeping cell content on one Markdown table row.
 
 #### `latex-rules.ts`
 - **Role**: Specialized parsers for KaTeX and MathJax.

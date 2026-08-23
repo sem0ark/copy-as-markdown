@@ -204,6 +204,24 @@ describe("turndown-service", () => {
       expect(markdown).toContain("| 5 |");
     });
 
+    it("should convert Word tables with bold td headers and Office markup", () => {
+      const html = `
+        <table>
+          <tr>
+            <td><b>Name</b><o:p></o:p></td>
+            <td><strong>Age</strong><o:p> </o:p></td>
+          </tr>
+          <tr><td>Alice</td><td>30</td></tr>
+        </table>
+      `;
+      const markdown = htmlToMarkdown(html);
+
+      expect(markdown).toContain("| **Name** | **Age** |");
+      expect(markdown).toContain("| --- | --- |");
+      expect(markdown).toContain("| Alice | 30 |");
+      expect(markdown).not.toContain("<o:p>");
+    });
+
     it("should flatten block elements inside table cells", () => {
       const html = `
         <table>

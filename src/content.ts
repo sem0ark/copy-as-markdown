@@ -271,7 +271,7 @@ async function generateMarkdown(): Promise<string> {
       logMarkdownExportCase(
         {
           id: `captured-${Date.now()}`,
-          description: `Captured export for ${domain}: ${root.selector}`,
+          description: `Captured export for ${root.selector}`,
           config: {
             selector: root.selector,
             action: root.action,

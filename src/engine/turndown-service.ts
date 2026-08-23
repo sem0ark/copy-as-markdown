@@ -141,6 +141,53 @@ function addImageRule(service: TurndownService): void {
   });
 }
 
+/** Unwraps Microsoft Office namespace elements such as <o:p>. */
+function stripOfficeMarkup(root: HTMLElement): void {
+  const walker = root.ownerDocument.createTreeWalker(root, 1);
+  const elements: Element[] = [];
+  let node = walker.nextNode();
+
+  while (node) {
+    if ((node as Element).tagName.includes(":")) {
+      elements.push(node as Element);
+    }
+    node = walker.nextNode();
+  }
+
+  for (const element of elements.reverse()) {
+    element.replaceWith(...Array.from(element.childNodes));
+  }
+}
+
+/** Promotes bold first-row cells so the GFM table rule recognizes headers. */
+function promoteTableHeaders(root: HTMLElement): void {
+  for (const table of root.querySelectorAll("table")) {
+    if (table.querySelector("thead")) continue;
+
+    const row = table.querySelector("tr");
+    if (!row) continue;
+
+    const cells = Array.from(row.querySelectorAll<HTMLElement>("td, th"));
+    if (
+      cells.length === 0 ||
+      cells.every((cell) => cell.tagName === "TH") ||
+      !cells.every((cell) => cell.querySelector("b, strong"))
+    ) {
+      continue;
+    }
+
+    for (const cell of cells) {
+      if (cell.tagName !== "TD") continue;
+      const header = root.ownerDocument.createElement("th");
+      for (const attribute of Array.from(cell.attributes)) {
+        header.setAttribute(attribute.name, attribute.value);
+      }
+      header.innerHTML = cell.innerHTML;
+      cell.replaceWith(header);
+    }
+  }
+}
+
 /**
  * Flattens block-level elements inside table cells so Turndown processes them
  * as inline content within a single row.
@@ -192,6 +239,8 @@ export function htmlToMarkdown(html: string): string {
   const root = document.createElement("div");
   root.append(template.content.cloneNode(true));
 
+  stripOfficeMarkup(root);
+  promoteTableHeaders(root);
   flattenTableCells(root);
 
   const service = getTurndownService();
@@ -203,6 +252,8 @@ export function htmlToMarkdown(html: string): string {
  */
 export function elementToMarkdown(element: Element): string {
   const clone = element.cloneNode(true) as HTMLElement;
+  stripOfficeMarkup(clone);
+  promoteTableHeaders(clone);
   flattenTableCells(clone);
   const markdown = getTurndownService().turndown(clone.outerHTML);
   return formatMarkdown(markdown);

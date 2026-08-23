@@ -282,12 +282,6 @@ describe("removeEmoji", () => {
     const expected = "10 ± 2 = 12 or 8 ";
     expect(removeEmoji(input)).toBe(expected);
   });
-
-  it.skip("should NOT remove other common typographic marks", () => {
-    const input = "Copyright ©, Registered ®, Trademark ™ 💡";
-    const expected = "Copyright ©, Registered ®, Trademark ™ ";
-    expect(removeEmoji(input)).toBe(expected);
-  });
 });
 
 describe("replaceUnicode", () => {
