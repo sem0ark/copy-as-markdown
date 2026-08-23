@@ -4,11 +4,17 @@ import { extractLatex, isDisplayMath, wrapLatex } from "./latex-parser";
 import {
   joinFunctions,
   removeEmoji,
+  replaceMarkdownElements,
   replaceUnicode,
   trimLines,
 } from "./markdown-formatter";
 
-const formatMarkdown = joinFunctions(replaceUnicode, removeEmoji, trimLines);
+const formatMarkdown = joinFunctions(
+  replaceUnicode,
+  removeEmoji,
+  trimLines,
+  replaceMarkdownElements,
+);
 
 /**
  * Centralized Turndown.js configuration
