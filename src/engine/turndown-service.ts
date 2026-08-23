@@ -1,6 +1,14 @@
 import TurndownService from "turndown";
 import { gfm } from "turndown-plugin-gfm";
 import { extractLatex, isDisplayMath, wrapLatex } from "./latex-parser";
+import {
+  joinFunctions,
+  removeEmoji,
+  replaceUnicode,
+  trimLines,
+} from "./markdown-formatter";
+
+const formatMarkdown = joinFunctions(replaceUnicode, removeEmoji, trimLines);
 
 /**
  * Centralized Turndown.js configuration
@@ -196,5 +204,6 @@ export function htmlToMarkdown(html: string): string {
 export function elementToMarkdown(element: Element): string {
   const clone = element.cloneNode(true) as HTMLElement;
   flattenTableCells(clone);
-  return getTurndownService().turndown(clone.outerHTML);
+  const markdown = getTurndownService().turndown(clone.outerHTML);
+  return formatMarkdown(markdown);
 }
