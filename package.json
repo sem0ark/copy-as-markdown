@@ -11,10 +11,7 @@
     "test:regression": "vitest run src/engine/regression-tests/",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
-    "type-check": "biome check --write ./src",
-    "format": "biome format --write ./src",
-    "lint": "biome lint --write ./src",
-    "check": "biome check --write ./src"
+    "lint": "biome format --write ./src; biome lint --write ./src; biome check --write ./src"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.6",

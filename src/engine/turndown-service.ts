@@ -41,7 +41,7 @@ function createTurndownService(): TurndownService {
     linkStyle: "inlined",
     linkReferenceStyle: "full",
   });
-
+  service.escape = (text) => text;
   service.use(gfm);
 
   // Keep custom elements so our rules can process them
