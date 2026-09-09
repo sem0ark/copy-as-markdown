@@ -36,7 +36,7 @@ describe("processor", () => {
       };
 
       // Act
-      const result = processElement(element, config);
+      const result = processElement(element, config, {});
 
       // Assert
       expect(result).toContain("Before script");
@@ -63,7 +63,7 @@ describe("processor", () => {
       };
 
       // Act
-      const result = processElement(element, config);
+      const result = processElement(element, config, {});
 
       // Assert
       expect(result).toContain("Title");
@@ -98,7 +98,7 @@ describe("processor", () => {
       };
 
       // Act
-      const result = processElement(element, config);
+      const result = processElement(element, config, {});
 
       // Assert
       expect(result).toContain("Section");
@@ -127,7 +127,7 @@ describe("processor", () => {
       };
 
       // Act
-      const result = processElement(element, config);
+      const result = processElement(element, config, {});
 
       // Assert
       expect(result).toContain("Text");
@@ -149,7 +149,7 @@ describe("processor", () => {
       };
 
       // Act
-      const result = processElement(element, config);
+      const result = processElement(element, config, {});
 
       // Assert
       expect(result).toBe("");
@@ -178,7 +178,7 @@ describe("processor", () => {
       };
 
       // Act
-      const result = processElement(element, config);
+      const result = processElement(element, config, {});
 
       // Assert
       expect(result).toContain("# Title");
@@ -216,7 +216,7 @@ describe("processor", () => {
       };
 
       // Act
-      const result = processElement(element, config);
+      const result = processElement(element, config, {});
 
       // Assert
       expect(result).toContain("# Main Content");
@@ -254,7 +254,7 @@ describe("processor", () => {
       };
 
       // Act
-      const result = processElement(element, config);
+      const result = processElement(element, config, {});
 
       // Assert
       expect(result).toContain("Article Title");
@@ -296,7 +296,7 @@ describe("processor", () => {
       };
 
       // Act
-      const result = processElement(element, config);
+      const result = processElement(element, config, {});
 
       // Assert
       expect(result).toContain("Page Title");
@@ -351,7 +351,7 @@ describe("processor", () => {
       };
 
       // Act
-      const result = processElement(element, config);
+      const result = processElement(element, config, {});
 
       // Assert
       expect(result).toContain("# Deep Title");
@@ -416,7 +416,7 @@ describe("processor", () => {
       };
 
       // Act
-      const result = processElement(element, config);
+      const result = processElement(element, config, {});
 
       // Assert
       expect(result).toContain("# Title");
@@ -463,7 +463,7 @@ describe("processor", () => {
       };
 
       // Act
-      const result = processElement(element, config);
+      const result = processElement(element, config, {});
 
       // Assert
       expect(result).toContain("# Iframe Title");
@@ -492,7 +492,7 @@ describe("processor", () => {
       };
 
       // Act
-      const result = processElement(element, config);
+      const result = processElement(element, config, {});
 
       // Assert
       expect(result).toContain("# Frame Title");
@@ -519,7 +519,7 @@ describe("processor", () => {
       };
 
       // Act
-      const result = processElement(element, config);
+      const result = processElement(element, config, {});
 
       // Assert
       expect(result).toContain("[Embedded Content:");
@@ -539,7 +539,7 @@ describe("processor", () => {
       };
 
       // Act
-      const result = processElement(element, config);
+      const result = processElement(element, config, {});
 
       // Assert
       expect(result).toBe("");
@@ -557,7 +557,7 @@ describe("processor", () => {
       };
 
       // Act
-      const result = processElement(element, config);
+      const result = processElement(element, config, {});
 
       // Assert
       expect(result).toBe("");
@@ -582,7 +582,7 @@ describe("processor", () => {
       };
 
       // Act
-      const result = processElement(element, config);
+      const result = processElement(element, config, {});
 
       // Assert
       expect(result).toContain("Content");
@@ -600,7 +600,7 @@ describe("processor", () => {
       };
 
       // Act
-      const result = processElement(element, config);
+      const result = processElement(element, config, {});
 
       // Assert
       expect(result).toBeTruthy();

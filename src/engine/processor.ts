@@ -1,6 +1,10 @@
 import type { ExportNode } from "../shared/types";
 import { elementToMarkdown } from "./turndown-service";
 
+export interface ProcessOptions {
+  pageUrl?: string;
+}
+
 /**
  * Core DOM processing engine
  * Traverses the DOM tree alongside the SiteProfile tree
@@ -18,7 +22,11 @@ import { elementToMarkdown } from "./turndown-service";
  *    - If children is empty, let Turndown handle the whole subtree
  *    - If children exists, iterate children, find matching DOM elements, recursively call processElement
  */
-export function processElement(el: HTMLElement, config: ExportNode): string {
+export function processElement(
+  el: HTMLElement,
+  config: ExportNode,
+  options: ProcessOptions,
+): string {
   // Step 1: Handle 'ignore' action
   if (config.action === "ignore") {
     return "";
@@ -37,7 +45,7 @@ export function processElement(el: HTMLElement, config: ExportNode): string {
             // Process the iframe's body content instead
             const clone = innerDoc.body.cloneNode(true) as HTMLElement;
             stripInvisibleTags(clone);
-            return elementToMarkdown(clone);
+            return elementToMarkdown(clone, options);
           }
         } catch (e) {
           console.warn("Cross-origin iframe blocked access", e);
@@ -48,11 +56,11 @@ export function processElement(el: HTMLElement, config: ExportNode): string {
       // Clone and strip scripts
       const clone = el.cloneNode(true) as HTMLElement;
       stripInvisibleTags(clone);
-      return elementToMarkdown(clone);
+      return elementToMarkdown(clone, options);
     }
 
     // If child rules exist, process them recursively
-    return processWithChildRules(el, config.children);
+    return processWithChildRules(el, config.children, options);
   }
 
   // Default fallback
@@ -132,6 +140,7 @@ function resolveElementsInContext(
 function processWithChildRules(
   parentElement: HTMLElement,
   childRules: ExportNode[],
+  options: ProcessOptions,
 ): string {
   const results: string[] = [];
 
@@ -153,7 +162,7 @@ function processWithChildRules(
 
     for (const matchedEl of matchingElements) {
       // Recursively process this matched element
-      const result = processElement(matchedEl as HTMLElement, rule);
+      const result = processElement(matchedEl as HTMLElement, rule, options);
 
       if (result) {
         results.push(result);
@@ -180,7 +189,7 @@ function processWithChildRules(
   }
 
   // Convert remaining content (not covered by any rule) to markdown
-  const remainingMarkdown = elementToMarkdown(clone);
+  const remainingMarkdown = elementToMarkdown(clone, options);
 
   // Add remaining content if it exists
   if (remainingMarkdown.trim()) {

@@ -211,7 +211,7 @@ async function generateMarkdown(): Promise<string> {
   if (!profile) {
     // No profile configured: export full page body as markdown
     console.log(`No profile found for ${domain}, exporting full page`);
-    const markdown = elementToMarkdown(document.body);
+    const markdown = elementToMarkdown(document.body, {});
     logMarkdownExportCase(
       {
         id: `full-page-${Date.now()}`,
@@ -267,7 +267,9 @@ async function generateMarkdown(): Promise<string> {
 
     // Process all matching elements for this root
     for (const rootElement of rootElements) {
-      const result = processElement(rootElement, root);
+      const result = processElement(rootElement, root, {
+        pageUrl: window.location.href,
+      });
       logMarkdownExportCase(
         {
           id: `captured-${Date.now()}`,

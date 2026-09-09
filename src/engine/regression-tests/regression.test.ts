@@ -9,6 +9,7 @@ import { processElement } from "../processor";
 interface RegressionCase {
   id: string;
   description: string;
+  url?: string;
   config: Omit<ExportNode, "id">;
   rawHtml: string;
   expectedFragments: string[];
@@ -41,7 +42,9 @@ describe("Regression Tests", () => {
       children: testCase.config.children ?? [],
     };
 
-    const output = processElement(root as HTMLElement, config);
+    const output = processElement(root as HTMLElement, config, {
+      pageUrl: testCase.url,
+    });
 
     for (const fragment of testCase.expectedFragments) {
       expect(output).toContain(fragment);

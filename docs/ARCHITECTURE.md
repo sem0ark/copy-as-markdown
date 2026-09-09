@@ -56,6 +56,11 @@ Pure TypeScript logic that operates on DOM clones. This layer is strictly decoup
 - **Output**: Wraps extracted TeX in `${ ... }$` for inline and $${ ... }$$ for blocks.
 - **Logic**: Prioritizes extraction from `<annotation>` or `<script type="math/tex">` tags to ensure 100% formula accuracy.
 
+#### `custom-element-rules.ts`
+- **Role**: Isolated site integrations for custom elements that need bespoke Markdown output.
+- **Contract**: Rules contain a `urlWildcard`, `cssSelector`, and `transform(element)` callback. The callback receives the matched DOM element so integrations can use attributes and child nodes without parsing serialized HTML.
+- **Integration**: `getMatchingRules(currentUrl)` filters entries for the active page. The Turndown service applies those rules both as normal rules and through `blankReplacement`, which handles attribute-only custom elements before Turndown's normal rule lookup. Services are created per conversion so SPA navigation cannot retain rules from a previous URL.
+
 ### Layer 3: UI Layer (Injected Interaction)
 **Directory:** `src/ui/`
 Simplistic Vanilla TS components injected into the web page.

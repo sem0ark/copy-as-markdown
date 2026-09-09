@@ -1,5 +1,9 @@
 import TurndownService from "turndown";
 import { gfm } from "turndown-plugin-gfm";
+import {
+  type CustomElementRule,
+  getMatchingRules,
+} from "./custom-element-rules";
 import { extractLatex, isDisplayMath, wrapLatex } from "./latex-parser";
 import {
   joinFunctions,
@@ -8,6 +12,7 @@ import {
   replaceUnicode,
   trimLines,
 } from "./markdown-formatter";
+import type { ProcessOptions } from "./processor";
 
 const formatMarkdown = joinFunctions(
   replaceUnicode,
@@ -21,23 +26,18 @@ const formatMarkdown = joinFunctions(
  * Handles HTML to Markdown conversion with LaTeX and image support
  */
 
-let turndownInstance: TurndownService | null = null;
-
 /**
- * Gets or creates the singleton Turndown service with custom rules
+ * Creates a Turndown service with custom rules for the current page.
  */
-export function getTurndownService(): TurndownService {
-  if (!turndownInstance) {
-    turndownInstance = createTurndownService();
-  }
-
-  return turndownInstance;
+export function getTurndownService(options: ProcessOptions): TurndownService {
+  return createTurndownService(options);
 }
 
 /**
  * Creates a configured Turndown service instance with GFM support and LaTeX handling.
  */
-function createTurndownService(): TurndownService {
+function createTurndownService(options: ProcessOptions): TurndownService {
+  const matchedRules = getMatchingRules(options.pageUrl ?? getDocumentUrl());
   const service = new TurndownService({
     headingStyle: "atx",
     codeBlockStyle: "fenced",
@@ -46,6 +46,7 @@ function createTurndownService(): TurndownService {
     strongDelimiter: "**",
     linkStyle: "inlined",
     linkReferenceStyle: "full",
+    blankReplacement: buildBlankReplacement(matchedRules),
   });
   service.escape = (text) => text;
   service.use(gfm);
@@ -55,6 +56,12 @@ function createTurndownService(): TurndownService {
 
   addLatexRule(service);
   addImageRule(service);
+  for (const [index, rule] of matchedRules.entries()) {
+    service.addRule(`custom-element-${index}`, {
+      filter: (node) => elementMatchesRule(node, rule),
+      replacement: (_content, node) => rule.transform(node as HTMLElement),
+    });
+  }
 
   return service;
 }
@@ -236,10 +243,33 @@ function resolveUrl(relativeUrl: string, baseUrl: string): string {
   }
 }
 
+function elementMatchesRule(node: Node, rule: CustomElementRule): boolean {
+  if (node.nodeType !== 1) return false;
+  try {
+    return (node as Element).matches(rule.cssSelector);
+  } catch {
+    return false;
+  }
+}
+
+function buildBlankReplacement(
+  matchedRules: CustomElementRule[],
+): (content: string, node: Node) => string {
+  return (_content, node) => {
+    for (const rule of matchedRules) {
+      if (elementMatchesRule(node, rule)) {
+        return rule.transform(node as HTMLElement);
+      }
+    }
+
+    return (node as HTMLElement & { isBlock?: boolean }).isBlock ? "\n\n" : "";
+  };
+}
+
 /**
  * Converts HTML string to Markdown
  */
-export function htmlToMarkdown(html: string): string {
+export function htmlToMarkdown(html: string, options: ProcessOptions): string {
   const template = document.createElement("template");
   template.innerHTML = html;
   const root = document.createElement("div");
@@ -249,18 +279,32 @@ export function htmlToMarkdown(html: string): string {
   promoteTableHeaders(root);
   flattenTableCells(root);
 
-  const service = getTurndownService();
+  const service = getTurndownService(options);
   return service.turndown(root.innerHTML);
 }
 
 /**
  * Converts a DOM element to Markdown
  */
-export function elementToMarkdown(element: Element): string {
+export function elementToMarkdown(
+  element: Element,
+  options: ProcessOptions,
+): string {
   const clone = element.cloneNode(true) as HTMLElement;
   stripOfficeMarkup(clone);
   promoteTableHeaders(clone);
   flattenTableCells(clone);
-  const markdown = getTurndownService().turndown(clone.outerHTML);
+  const serviceOptions = {
+    ...options,
+    pageUrl:
+      options.pageUrl ||
+      element.ownerDocument.location?.href ||
+      getDocumentUrl(),
+  };
+  const markdown = getTurndownService(serviceOptions).turndown(clone.outerHTML);
   return formatMarkdown(markdown);
+}
+
+function getDocumentUrl(): string {
+  return typeof document !== "undefined" ? document.location.href : "";
 }
