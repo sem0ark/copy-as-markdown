@@ -10,10 +10,7 @@ export interface ExportNode {
   selector: string;
 
   /** Action to take on the matched element */
-  action: "include" | "ignore" | "template";
-
-  /** Optional Markdown template string using {{content}} placeholder */
-  template?: string;
+  action: "include" | "ignore";
 
   /** Child rules that apply within this node's scope */
   children: ExportNode[];

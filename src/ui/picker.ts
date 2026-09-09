@@ -7,7 +7,7 @@ import { createExportNode } from "../shared/tree-utils";
 import type { ExportNode } from "../shared/types";
 import { querySelectorAllDeep } from "../utils/dom-utils";
 import { Highlighter } from "./highlighter";
-import { type MenuAction, PickerMenu, promptForTemplate } from "./picker-menu";
+import { type MenuAction, PickerMenu } from "./picker-menu";
 
 export interface PickerCallbacks {
   onNodeCreated: (node: ExportNode, element: Element) => void;
@@ -193,9 +193,6 @@ export class Picker {
     );
     buttonRow.appendChild(
       createButton("Ignore", () => this.handleAction("ignore")),
-    );
-    buttonRow.appendChild(
-      createButton("Template", () => this.handleAction("template")),
     );
 
     this.panel.appendChild(buttonRow);
@@ -483,9 +480,6 @@ export class Picker {
       case "ignore":
         this.handleIgnore(selector, element);
         break;
-      case "template":
-        this.handleTemplate(selector, element);
-        break;
     }
   }
 
@@ -520,36 +514,6 @@ export class Picker {
     const node = createExportNode(selector, "ignore");
 
     console.log(`[Picker] Ignore: ${selector}`);
-
-    this.roots.push(node);
-    this.updateRootsDisplay();
-
-    if (this.callbacks) {
-      this.callbacks.onNodeCreated(node, element);
-    }
-
-    // Clear input and hide highlight
-    if (this.input) {
-      this.input.value = "";
-      this.updateStatus("");
-    }
-    this.highlighter.hide();
-    this.currentElements = [];
-  }
-
-  /**
-   * Handles "Template" action
-   */
-  private handleTemplate(selector: string, element: Element): void {
-    const template = promptForTemplate();
-
-    if (!template) {
-      return;
-    }
-
-    const node = createExportNode(selector, "template", template);
-
-    console.log(`[Picker] Template: ${selector}\nTemplate: ${template}`);
 
     this.roots.push(node);
     this.updateRootsDisplay();

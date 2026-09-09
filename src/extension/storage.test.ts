@@ -103,8 +103,7 @@ describe("storage", () => {
           {
             id: "root-2",
             selector: "article",
-            action: "template",
-            template: "# {{content}}",
+            action: "include",
             children: [],
           },
         ],
@@ -381,8 +380,7 @@ describe("storage", () => {
           {
             id: "b-updated",
             selector: "section",
-            action: "template",
-            template: "{{content}}",
+            action: "include",
             children: [],
           },
         ],

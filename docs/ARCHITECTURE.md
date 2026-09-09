@@ -32,8 +32,7 @@ Pure TypeScript logic that operates on DOM clones. This layer is strictly decoup
 - **Entry Point**: `processElement(el: HTMLElement, config: ExportNode): string`
 - **Logic**: 
     1. **Ignore**: If `action === 'ignore'`, returns empty string (element is excluded).
-    2. **Template**: If `action === 'template'`, extracts text content and applies template transformation.
-    3. **Include**: If `action === 'include'`:
+    2. **Include**: If `action === 'include'`:
         - **No children**: 
             - If element is an iframe, drills into its `contentDocument.body` for same-origin iframes
             - Otherwise clones element, strips all `<script>` tags and their content, lets Turndown handle the entire subtree
@@ -42,8 +41,7 @@ Pure TypeScript logic that operates on DOM clones. This layer is strictly decoup
     - Clones DOM before processing to avoid side effects.
     - **Security**: Automatically removes all `<script>` tags and their content to prevent JavaScript code from appearing in markdown.
     - Each matched element is processed exactly once (prevents duplication).
-    - Supports nested rules (e.g., parent `include` with child `ignore` or `template`).
-    - Template rules override default Turndown processing for specific elements.
+    - Supports nested rules (e.g., parent `include` with child `ignore`).
     - **Iframe Drilling**: `resolveElementsInContext()` supports `>>>` syntax for drilling into same-origin iframes in child selectors.
 - **TODO**: Implement content-density heuristics for auto-detection if no profile exists.
 
@@ -57,11 +55,6 @@ Pure TypeScript logic that operates on DOM clones. This layer is strictly decoup
 - **Role**: Specialized parsers for KaTeX and MathJax.
 - **Output**: Wraps extracted TeX in `${ ... }$` for inline and $${ ... }$$ for blocks.
 - **Logic**: Prioritizes extraction from `<annotation>` or `<script type="math/tex">` tags to ensure 100% formula accuracy.
-
-#### `formatter.ts`
-- **Role**: Handles string interpolation for custom templates.
-- **Variables**: Supports `{{content}}`. 
-- **TODO**: Add support for `{{href}}`, `{{src}}`, and `{{title}}`.
 
 ### Layer 3: UI Layer (Injected Interaction)
 **Directory:** `src/ui/`
@@ -81,7 +74,7 @@ Simplistic Vanilla TS components injected into the web page.
     - Support for iframe drilling with `>>>` syntax (e.g., `iframe#doc >>> article`)
     - Validates selectors and shows error messages
     - Highlights first matched element if multiple matches
-- **Actions**: Include, Ignore, Template buttons for new roots.
+- **Actions**: Include and Ignore buttons for new roots.
 - **Control Buttons**: Done (saves and closes), Cancel (discards and closes).
 - **Callbacks**: Provides `onNodeCreated`, `onNodeRemoved`, `onComplete`, and `onCancel` hooks.
 - **Keyboard**: Enter to confirm current selector, ESC to cancel.
@@ -104,10 +97,9 @@ Simplistic Vanilla TS components injected into the web page.
 - **Use Case**: Enables export of content embedded in same-origin iframes (e.g., documentation sites, course platforms).
 
 #### `picker-menu.ts` (Action Menu)
-- **Actions**: Include, Ignore, Template, Cancel buttons.
+- **Actions**: Include, Ignore, Cancel buttons.
 - **Positioning**: Auto-adjusts to stay within viewport bounds.
 - **Styling**: Modern, clean UI with hover states.
-- **Template Input**: `promptForTemplate()` helper for user input.
 
 #### `toast.ts`
 - **Role**: Provides immediate feedback (e.g., "Copied to Clipboard").
@@ -169,8 +161,7 @@ The configuration is stored as a tree that mirrors the parts of the DOM the user
 export interface ExportNode {
   id: string;                 // Internal UUID
   selector: string;           // CSS selector
-  action: 'include' | 'ignore' | 'template';
-  template?: string;          // e.g., "> [!info] {{content}}"
+  action: 'include' | 'ignore';
   children: ExportNode[];     // Nested overrides/rules
 }
 
@@ -269,7 +260,6 @@ graph TD
     C --> E[processor.ts]
     E --> TS[turndown-service.ts]
     TS --> L[latex-rules.ts]
-    E --> F[formatter.ts]
     end
 
     subgraph Shared

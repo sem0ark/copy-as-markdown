@@ -84,18 +84,9 @@ function validateExportNode(node: ExportNode, seenIds: Set<string>): string[] {
     errors.push(`Node ${node.id || "unknown"} must have a non-empty selector`);
   }
 
-  if (!["include", "ignore", "template"].includes(node.action)) {
+  if (!["include", "ignore"].includes(node.action)) {
     errors.push(
       `Node ${node.id || "unknown"} has invalid action: ${node.action}`,
-    );
-  }
-
-  if (
-    node.action === "template" &&
-    (!node.template || typeof node.template !== "string")
-  ) {
-    errors.push(
-      `Node ${node.id || "unknown"} with action 'template' must have a template string`,
     );
   }
 
@@ -193,19 +184,16 @@ function findMatchingAncestor(
  * Creates a new ExportNode with default values.
  * @param selector - CSS selector for the node
  * @param action - Action type for the node
- * @param template - Optional template string
  * @returns A new ExportNode
  */
 export function createExportNode(
   selector: string,
-  action: "include" | "ignore" | "template",
-  template?: string,
+  action: "include" | "ignore",
 ): ExportNode {
   return {
     id: generateNodeId(),
     selector,
     action,
-    template,
     children: [],
   };
 }

@@ -1,9 +1,9 @@
 /**
  * Floating action menu for the element picker
- * Provides [Set Main], [Ignore], [Template] actions
+ * Provides [Set Main], [Ignore] actions
  */
 
-export type MenuAction = "include" | "ignore" | "template" | "cancel";
+export type MenuAction = "include" | "ignore" | "cancel";
 
 export interface MenuButton {
   label: string;
@@ -33,7 +33,6 @@ export class PickerMenu {
       buttons: options.buttons ?? [
         { label: "Set as Main Frame", action: "include" },
         { label: "Ignore Region", action: "ignore" },
-        { label: "Create Template", action: "template" },
         { label: "Cancel", action: "cancel" },
       ],
       zIndex: options.zIndex ?? 2147483646,
@@ -173,18 +172,4 @@ export class PickerMenu {
   get visible(): boolean {
     return this.menu !== null;
   }
-}
-
-/**
- * Shows a prompt dialog for template input
- */
-export function promptForTemplate(
-  defaultValue = "> [!info]\n> {{content}}",
-): string | null {
-  const template = prompt(
-    "Enter Markdown template (use {{content}} for text):",
-    defaultValue,
-  );
-
-  return template?.trim() || null;
 }

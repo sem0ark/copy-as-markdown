@@ -275,7 +275,6 @@ async function generateMarkdown(): Promise<string> {
           config: {
             selector: root.selector,
             action: root.action,
-            ...(root.template ? { template: root.template } : {}),
             children: root.children,
           },
         },

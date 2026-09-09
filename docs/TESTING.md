@@ -58,13 +58,12 @@ description, and the output fragments that describe the expected behavior.
 - Node lookup by ID
 - ID uniqueness validation
 - JSON serialization/deserialization
-- Schema validation (domain, selectors, actions, templates)
+- Schema validation (domain, selectors, and actions)
 
 ### Formatting (engine/formatter.ts)
 ```typescript
 // engine/formatter.test.ts
 test('replaces {{content}} placeholder', () => {
-  const result = applyTemplate('> {{content}}', { content: 'Hello' });
   expect(result).toBe('> Hello');
 });
 ```

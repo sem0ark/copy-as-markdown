@@ -91,8 +91,7 @@ describe("processor", () => {
           {
             id: "content-para",
             selector: ".content",
-            action: "template",
-            template: "**{{content}}**",
+            action: "include",
             children: [],
           },
         ],
@@ -103,7 +102,7 @@ describe("processor", () => {
 
       // Assert
       expect(result).toContain("Section");
-      expect(result).toContain("**Important text**");
+      expect(result).toContain("Important text");
       expect(result).not.toContain("external.js");
       expect(result).not.toContain("var x = 1");
       expect(result).not.toContain("<script");
@@ -154,68 +153,6 @@ describe("processor", () => {
 
       // Assert
       expect(result).toBe("");
-    });
-  });
-
-  describe("processElement - template action", () => {
-    it("should apply template with {{content}} placeholder", () => {
-      // Arrange
-      const html = "<blockquote>This is a quote</blockquote>";
-      const element = createElementFromHtml(html);
-      const config: ExportNode = {
-        id: "quote-template",
-        selector: "blockquote",
-        action: "template",
-        template: "> [!quote]\n> {{content}}",
-        children: [],
-      };
-
-      // Act
-      const result = processElement(element, config);
-
-      // Assert
-      expect(result).toContain("> [!quote]");
-      expect(result).toContain("This is a quote");
-    });
-
-    it("should extract text from nested HTML", () => {
-      // Arrange
-      const html =
-        '<div class="note"><strong>Important:</strong> <em>Read this</em></div>';
-      const element = createElementFromHtml(html);
-      const config: ExportNode = {
-        id: "note-template",
-        selector: ".note",
-        action: "template",
-        template: "> [!info]\n> {{content}}",
-        children: [],
-      };
-
-      // Act
-      const result = processElement(element, config);
-
-      // Assert
-      expect(result).toContain("Important: Read this");
-      expect(result).not.toContain("<strong>");
-      expect(result).not.toContain("<em>");
-    });
-
-    it("should use default template if none provided", () => {
-      // Arrange
-      const html = "<p>Simple text</p>";
-      const element = createElementFromHtml(html);
-      const config: ExportNode = {
-        id: "default-template",
-        selector: "p",
-        action: "template",
-        children: [],
-      };
-
-      // Act
-      const result = processElement(element, config);
-
-      // Assert
-      expect(result).toBe("Simple text");
     });
   });
 
@@ -369,90 +306,6 @@ describe("processor", () => {
     });
   });
 
-  describe("Override Test: template rule inside include rule", () => {
-    it("should apply template transformation to specific child", () => {
-      // Arrange
-      const html = `
-        <article>
-          <h1>Article Title</h1>
-          <p>Regular paragraph.</p>
-          <blockquote>This should be a callout</blockquote>
-          <p>Another paragraph.</p>
-        </article>
-      `;
-      const element = createElementFromHtml(html);
-      const config: ExportNode = {
-        id: "article-root",
-        selector: "article",
-        action: "include",
-        children: [
-          {
-            id: "quote-template",
-            selector: "blockquote",
-            action: "template",
-            template: "> [!quote]\n> {{content}}",
-            children: [],
-          },
-        ],
-      };
-
-      // Act
-      const result = processElement(element, config);
-
-      // Assert
-      expect(result).toContain("Article Title");
-      expect(result).toContain("Regular paragraph");
-      expect(result).toContain("> [!quote]");
-      expect(result).toContain("This should be a callout");
-      expect(result).toContain("Another paragraph");
-    });
-
-    it("should handle nested overrides: include > template > ignore", () => {
-      // Arrange
-      const html = `
-        <section>
-          <div class="box">
-            <h2>Box Title</h2>
-            <p>Box content</p>
-            <span class="meta">metadata</span>
-          </div>
-        </section>
-      `;
-      const element = createElementFromHtml(html);
-      const config: ExportNode = {
-        id: "section-root",
-        selector: "section",
-        action: "include",
-        children: [
-          {
-            id: "box-template",
-            selector: "div.box",
-            action: "template",
-            template: "> [!info] Box\n> {{content}}",
-            children: [
-              {
-                id: "meta-ignore",
-                selector: ".meta",
-                action: "ignore",
-                children: [],
-              },
-            ],
-          },
-        ],
-      };
-
-      // Act
-      const result = processElement(element, config);
-
-      // Assert
-      expect(result).toContain("> [!info] Box");
-      expect(result).toContain("Box Title");
-      expect(result).toContain("Box content");
-      // Note: template action extracts ALL text content, including ignored children
-      // This is expected behavior - template gets textContent which includes everything
-    });
-  });
-
   describe("Complex nested structures", () => {
     it("should handle deeply nested include rules", () => {
       // Arrange
@@ -548,8 +401,7 @@ describe("processor", () => {
               {
                 id: "note-template",
                 selector: "aside.note",
-                action: "template",
-                template: "> [!note]\n> {{content}}",
+                action: "include",
                 children: [],
               },
             ],
@@ -570,7 +422,6 @@ describe("processor", () => {
       expect(result).toContain("# Title");
       expect(result).not.toContain("Published: 2024");
       expect(result).toContain("Paragraph 1");
-      expect(result).toContain("> [!note]");
       expect(result).toContain("Important note");
       expect(result).toContain("Paragraph 2");
       expect(result).not.toContain("Footer info");
@@ -701,8 +552,7 @@ describe("processor", () => {
       const config: ExportNode = {
         id: "whitespace-template",
         selector: "div",
-        action: "template",
-        template: "{{content}}",
+        action: "include",
         children: [],
       };
 

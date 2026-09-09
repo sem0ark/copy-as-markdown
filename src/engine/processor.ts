@@ -1,5 +1,4 @@
 import type { ExportNode } from "../shared/types";
-import { applyTemplate, type TemplateContext } from "./formatter";
 import { elementToMarkdown } from "./turndown-service";
 
 /**
@@ -15,8 +14,7 @@ import { elementToMarkdown } from "./turndown-service";
  *
  * Logic:
  * 1. If action === 'ignore', return empty string
- * 2. If action === 'template', extract text, apply template, return
- * 3. If action === 'include':
+ * 2. If action === 'include':
  *    - If children is empty, let Turndown handle the whole subtree
  *    - If children exists, iterate children, find matching DOM elements, recursively call processElement
  */
@@ -26,17 +24,7 @@ export function processElement(el: HTMLElement, config: ExportNode): string {
     return "";
   }
 
-  // Step 2: Handle 'template' action
-  if (config.action === "template") {
-    const textContent = el.textContent || "";
-    const template = config.template || "{{content}}";
-    const context: TemplateContext = {
-      content: textContent.trim(),
-    };
-    return applyTemplate(template, context);
-  }
-
-  // Step 3: Handle 'include' action
+  // Step 2: Handle 'include' action
   if (config.action === "include") {
     // If no child rules, let Turndown handle the entire subtree
     if (config.children.length === 0) {

@@ -47,8 +47,7 @@ describe("tree-utils", () => {
           {
             id: "footer",
             selector: "footer",
-            action: "template",
-            template: "> [!info] {{content}}",
+            action: "include",
             children: [],
           },
         ],
@@ -79,13 +78,6 @@ describe("tree-utils", () => {
     it("should return undefined for non-existent ID", () => {
       const result = findNodeById(sampleTree, "nonexistent");
       expect(result).toBeUndefined();
-    });
-
-    it("should find a node with template action", () => {
-      const result = findNodeById(sampleTree, "footer");
-      expect(result).toBeDefined();
-      expect(result?.action).toBe("template");
-      expect(result?.template).toBe("> [!info] {{content}}");
     });
   });
 
@@ -230,19 +222,6 @@ describe("tree-utils", () => {
       expect(errors.some((e) => e.includes("invalid action"))).toBe(true);
     });
 
-    it("should reject template action without template string", () => {
-      // Arrange
-      validProfile.roots[0].action = "template";
-      validProfile.roots[0].template = undefined;
-
-      // Act
-      const errors = validateSiteProfile(validProfile);
-
-      // Assert
-      expect(errors.length).toBeGreaterThan(0);
-      expect(errors.some((e) => e.includes("template"))).toBe(true);
-    });
-
     it("should detect duplicate node IDs in tree", () => {
       // Arrange
       validProfile.roots[0].children = [
@@ -292,8 +271,7 @@ describe("tree-utils", () => {
             {
               id: "footer",
               selector: "footer",
-              action: "template",
-              template: "> {{content}}",
+              action: "include",
               children: [],
             },
           ],
@@ -372,15 +350,6 @@ describe("tree-utils", () => {
 
       expect(node.selector).toBe(".ads");
       expect(node.action).toBe("ignore");
-      expect(node.template).toBeUndefined();
-    });
-
-    it("should create node with template", () => {
-      const node = createExportNode(".note", "template", "> {{content}}");
-
-      expect(node.selector).toBe(".note");
-      expect(node.action).toBe("template");
-      expect(node.template).toBe("> {{content}}");
     });
   });
 
@@ -508,8 +477,7 @@ describe("tree-utils", () => {
               {
                 id: "note",
                 selector: ".note",
-                action: "template",
-                template: "> {{content}}",
+                action: "include",
                 children: [],
               },
             ],
@@ -568,8 +536,7 @@ describe("tree-utils", () => {
               {
                 id: "child",
                 selector: ".content",
-                action: "template",
-                template: "# {{content}}",
+                action: "include",
                 children: [],
               },
             ],
@@ -585,7 +552,6 @@ describe("tree-utils", () => {
       expect(deserialized).toEqual(profile);
       expect(deserialized.domain).toBe("example.com");
       expect(deserialized.roots[0].children).toHaveLength(1);
-      expect(deserialized.roots[0].children[0].template).toBe("# {{content}}");
     });
 
     it("should handle empty children arrays", () => {
@@ -616,8 +582,7 @@ describe("tree-utils", () => {
       const node: ExportNode = {
         id: "test-id",
         selector: "div.test",
-        action: "template",
-        template: "**{{content}}**",
+        action: "include",
         children: [
           {
             id: "nested",
@@ -635,8 +600,7 @@ describe("tree-utils", () => {
       // Assert
       expect(deserialized.id).toBe("test-id");
       expect(deserialized.selector).toBe("div.test");
-      expect(deserialized.action).toBe("template");
-      expect(deserialized.template).toBe("**{{content}}**");
+      expect(deserialized.action).toBe("include");
       expect(deserialized.children).toHaveLength(1);
       expect(deserialized.children[0].id).toBe("nested");
     });
