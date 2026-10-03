@@ -1,9 +1,9 @@
 /**
  * Floating action menu for the element picker
- * Provides [Set Main], [Ignore] actions
+ * Provides [Set Main], [Cancel] actions
  */
 
-export type MenuAction = "include" | "ignore" | "cancel";
+export type MenuAction = "include" | "cancel";
 
 export interface MenuButton {
   label: string;
@@ -32,7 +32,6 @@ export class PickerMenu {
     this.options = {
       buttons: options.buttons ?? [
         { label: "Set as Main Frame", action: "include" },
-        { label: "Ignore Region", action: "ignore" },
         { label: "Cancel", action: "cancel" },
       ],
       zIndex: options.zIndex ?? 2147483646,

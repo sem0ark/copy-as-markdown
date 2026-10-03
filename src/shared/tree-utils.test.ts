@@ -4,7 +4,9 @@ import {
   createExportNode,
   findNodeById,
   generateNodeId,
+  hideFields,
   insertNodeInTree,
+  populateMissingNodeIds,
   validateSiteProfile,
 } from "./tree-utils";
 import type { ExportNode, SiteProfile } from "./types";
@@ -105,6 +107,94 @@ describe("tree-utils", () => {
         ids.add(generateNodeId());
       }
       expect(ids.size).toBe(100);
+    });
+  });
+
+  describe("populateMissingNodeIds", () => {
+    it("should populate IDs on roots and nested children", () => {
+      const profile = {
+        domain: "example.com",
+        updatedAt: Date.now(),
+        roots: [
+          {
+            selector: "article",
+            action: "include" as const,
+            children: [
+              {
+                selector: ".comments",
+                action: "ignore" as const,
+                children: [],
+              },
+            ],
+          },
+        ],
+      } as unknown as SiteProfile;
+
+      const result = populateMissingNodeIds(profile);
+
+      expect(result.roots[0].id).toMatch(/^node_/);
+      expect(result.roots[0].children[0].id).toMatch(/^node_/);
+    });
+
+    it("should preserve existing IDs", () => {
+      const profile: SiteProfile = {
+        domain: "example.com",
+        updatedAt: Date.now(),
+        roots: [
+          {
+            id: "existing-root",
+            selector: "article",
+            action: "include",
+            children: [
+              {
+                id: "existing-child",
+                selector: ".comments",
+                action: "ignore",
+                children: [],
+              },
+            ],
+          },
+        ],
+      };
+
+      const result = populateMissingNodeIds(profile);
+
+      expect(result.roots[0].id).toBe("existing-root");
+      expect(result.roots[0].children[0].id).toBe("existing-child");
+    });
+  });
+
+  describe("hideFields", () => {
+    it("should hide fields recursively without mutating the input", () => {
+      const value = {
+        id: "root",
+        name: "Root",
+        children: [{ id: "child", name: "Child" }],
+      };
+
+      const result = hideFields(value, ["id"]);
+
+      expect(result).toEqual({
+        name: "Root",
+        children: [{ name: "Child" }],
+      });
+      expect(value.children[0].id).toBe("child");
+    });
+
+    it("should hide multiple fields while preserving primitive values", () => {
+      const value = {
+        id: "root",
+        updatedAt: 123,
+        selector: ".content",
+        enabled: true,
+        children: [],
+      };
+
+      expect(hideFields(value, ["id", "updatedAt"])).toEqual({
+        selector: ".content",
+        enabled: true,
+        children: [],
+      });
     });
   });
 

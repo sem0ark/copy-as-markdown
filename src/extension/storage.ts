@@ -1,3 +1,4 @@
+import { populateMissingNodeIds } from "../shared/tree-utils";
 import type { SiteProfile } from "../shared/types";
 
 /**
@@ -24,7 +25,7 @@ export async function saveProfile(profile: SiteProfile): Promise<void> {
   const profiles: Record<string, SiteProfile> = result[STORAGE_KEY] || {};
 
   profiles[profile.domain] = {
-    ...profile,
+    ...populateMissingNodeIds(profile),
     updatedAt: Date.now(),
   };
 

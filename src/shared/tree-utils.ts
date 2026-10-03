@@ -34,6 +34,54 @@ export function generateNodeId(): string {
 }
 
 /**
+ * Adds generated IDs to profile nodes that were manually entered without one.
+ * Existing IDs are preserved so saved configurations remain stable.
+ */
+export function populateMissingNodeIds(profile: SiteProfile): SiteProfile {
+  return {
+    ...profile,
+    roots: profile.roots.map(populateNodeId),
+  };
+}
+
+/**
+ * Removes internal IDs from a profile before showing or exporting it.
+ */
+export function removeInternalFields(profile: SiteProfile): unknown {
+  return hideFields(profile, ["id", "updatedAt"]);
+}
+
+/**
+ * Recursively removes named fields from objects and arrays without mutating
+ * the input value.
+ */
+export function hideFields<T>(value: T, fields: readonly string[]): unknown {
+  if (Array.isArray(value)) {
+    return value.map((item) => hideFields(item, fields));
+  }
+
+  if (value !== null && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).flatMap(([key, item]) =>
+        fields.includes(key) ? [] : [[key, hideFields(item, fields)]],
+      ),
+    );
+  }
+
+  return value;
+}
+
+function populateNodeId(node: ExportNode): ExportNode {
+  return {
+    ...node,
+    id: node.id || generateNodeId(),
+    children: Array.isArray(node.children)
+      ? node.children.map(populateNodeId)
+      : node.children,
+  };
+}
+
+/**
  * Validates a SiteProfile for correctness.
  * @param profile - The profile to validate
  * @returns An array of error messages, empty if valid

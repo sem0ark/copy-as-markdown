@@ -23,9 +23,10 @@ export const customElementRules: CustomElementRule[] = [
       const directContent = Array.from(element.childNodes)
         .filter((node) => node.nodeType === Node.TEXT_NODE)
         .map((node) => node.textContent)
-        .join("").trim();
+        .join("")
+        .trim();
 
-      return `${directContent} (\`${textContent}\`)`
+      return `${directContent} (\`${textContent}\`)`;
     },
   },
 ];

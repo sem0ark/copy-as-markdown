@@ -1,4 +1,5 @@
-import type { ExtensionMessage } from "./shared/types";
+import { populateMissingNodeIds } from "./shared/tree-utils";
+import type { ExtensionMessage, SiteProfile } from "./shared/types";
 
 /**
  * Background Service Worker
@@ -55,7 +56,28 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 
 // Listen for messages from content script
 chrome.runtime.onMessage.addListener(
-  (message: ExtensionMessage, _sender, _sendResponse) => {
+  (message: ExtensionMessage, _sender, sendResponse) => {
+    if (message.type === "SAVE_PROFILES") {
+      const profiles = Object.fromEntries(
+        Object.entries(message.profiles).map(([domain, profile]) => [
+          domain,
+          {
+            ...populateMissingNodeIds(profile as SiteProfile),
+            updatedAt: Date.now(),
+          },
+        ]),
+      );
+      chrome.storage.local
+        .set({ profiles })
+        .then(() => sendResponse({ ok: true }))
+        .catch((error: unknown) =>
+          sendResponse({
+            ok: false,
+            error: error instanceof Error ? error.message : "Save failed",
+          }),
+        );
+      return true;
+    }
     if (message.type === "EXPORT_COMPLETE") {
       console.log(
         "Export completed, markdown length:",

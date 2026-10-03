@@ -1,3 +1,10 @@
+import {
+  populateMissingNodeIds,
+  removeInternalFields,
+  validateSiteProfile,
+} from "./shared/tree-utils";
+import type { SiteProfile } from "./shared/types";
+
 /**
  * Configuration Editor
  * Simple JSON editor for managing site profiles
@@ -15,7 +22,13 @@ const fileInput = document.getElementById("fileInput") as HTMLInputElement;
 async function loadConfig() {
   try {
     const data = await chrome.storage.local.get("profiles");
-    const config = { profiles: data.profiles || {} };
+    const profiles = Object.fromEntries(
+      Object.entries(data.profiles || {}).map(([domain, profile]) => [
+        domain,
+        removeInternalFields(profile as SiteProfile),
+      ]),
+    );
+    const config = { profiles };
     editor.value = JSON.stringify(config, null, 2);
     showStatus("Configuration loaded", "success");
   } catch (error) {
@@ -33,8 +46,11 @@ async function saveConfig() {
       throw new Error("Invalid format: must have 'profiles' object");
     }
 
-    // Validate each profile
-    for (const [domain, profile] of Object.entries(config.profiles)) {
+    const profiles: Record<string, SiteProfile> = {};
+
+    // Normalize and validate each profile, including nested child nodes.
+    for (const [domain, value] of Object.entries(config.profiles)) {
+      const profile = populateMissingNodeIds(value as SiteProfile);
       if (
         !profile.domain ||
         !Array.isArray(profile.roots) ||
@@ -45,17 +61,24 @@ async function saveConfig() {
         );
       }
 
-      // Validate each root
-      for (const root of profile.roots) {
-        if (!root.selector || !root.action) {
-          throw new Error(
-            `Invalid root in profile for ${domain}: missing selector or action`,
-          );
-        }
+      const errors = validateSiteProfile({
+        ...profile,
+        updatedAt: profile.updatedAt || Date.now(),
+      });
+      if (errors.length > 0) {
+        throw new Error(`Invalid profile for ${domain}: ${errors.join("; ")}`);
       }
+
+      profiles[domain] = profile;
     }
 
-    await chrome.storage.local.set({ profiles: config.profiles });
+    const response = await chrome.runtime.sendMessage({
+      type: "SAVE_PROFILES",
+      profiles,
+    });
+    if (!response?.ok) {
+      throw new Error(response?.error || "Background save failed");
+    }
     showStatus("Configuration saved successfully", "success");
   } catch (error) {
     showStatus(`Failed to save: ${error}`, "error");
@@ -64,7 +87,16 @@ async function saveConfig() {
 
 // Export to file
 function exportToFile() {
-  const blob = new Blob([editor.value], { type: "application/json" });
+  const config = JSON.parse(editor.value);
+  const profiles = Object.fromEntries(
+    Object.entries(config.profiles || {}).map(([domain, profile]) => [
+      domain,
+      removeInternalFields(profile as SiteProfile),
+    ]),
+  );
+  const blob = new Blob([JSON.stringify({ profiles }, null, 2)], {
+    type: "application/json",
+  });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -92,7 +124,13 @@ fileInput.addEventListener("change", async (e) => {
       throw new Error("Invalid file format");
     }
 
-    editor.value = JSON.stringify(config, null, 2);
+    const profiles = Object.fromEntries(
+      Object.entries(config.profiles).map(([domain, profile]) => [
+        domain,
+        removeInternalFields(profile as SiteProfile),
+      ]),
+    );
+    editor.value = JSON.stringify({ profiles }, null, 2);
     showStatus("File imported. Click 'Save' to apply changes.", "success");
   } catch (error) {
     showStatus(`Failed to import: ${error}`, "error");

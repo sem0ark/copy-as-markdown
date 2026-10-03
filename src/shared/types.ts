@@ -36,6 +36,7 @@ export interface SiteProfile {
 export type ExtensionMessage =
   | { type: "EXPORT_PAGE" }
   | { type: "CONFIGURE_SITE" }
+  | { type: "SAVE_PROFILES"; profiles: Record<string, SiteProfile> }
   | { type: "EXPORT_COMPLETE"; markdown: string }
   | { type: "SHOW_TOAST"; message: string };
 

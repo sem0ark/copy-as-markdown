@@ -7,7 +7,6 @@ import { createExportNode } from "../shared/tree-utils";
 import type { ExportNode } from "../shared/types";
 import { querySelectorAllDeep } from "../utils/dom-utils";
 import { Highlighter } from "./highlighter";
-import { type MenuAction, PickerMenu } from "./picker-menu";
 
 export interface PickerCallbacks {
   onNodeCreated: (node: ExportNode, element: Element) => void;
@@ -25,7 +24,6 @@ export interface PickerOptions {
  */
 export class Picker {
   private highlighter: Highlighter;
-  private menu: PickerMenu;
   private panel: HTMLDivElement | null = null;
   private input: HTMLInputElement | null = null;
   private isActive = false;
@@ -36,7 +34,6 @@ export class Picker {
 
   constructor() {
     this.highlighter = new Highlighter();
-    this.menu = new PickerMenu();
   }
 
   /**
@@ -60,7 +57,6 @@ export class Picker {
 
     this.isActive = false;
     this.highlighter.deactivate();
-    this.menu.hide();
     this.removePanel();
     this.callbacks = null;
   }
@@ -190,9 +186,6 @@ export class Picker {
 
     buttonRow.appendChild(
       createButton("Include", () => this.handleAction("include"), true),
-    );
-    buttonRow.appendChild(
-      createButton("Ignore", () => this.handleAction("ignore")),
     );
 
     this.panel.appendChild(buttonRow);
@@ -457,7 +450,7 @@ export class Picker {
   /**
    * Handles action button clicks
    */
-  private handleAction(action: MenuAction): void {
+  private handleAction(action: "include"): void {
     const selector = this.input?.value.trim() || "";
 
     if (!selector) {
@@ -477,9 +470,6 @@ export class Picker {
       case "include":
         this.handleInclude(selector, element);
         break;
-      case "ignore":
-        this.handleIgnore(selector, element);
-        break;
     }
   }
 
@@ -490,30 +480,6 @@ export class Picker {
     const node = createExportNode(selector, "include");
 
     console.log(`[Picker] Include: ${selector}`);
-
-    this.roots.push(node);
-    this.updateRootsDisplay();
-
-    if (this.callbacks) {
-      this.callbacks.onNodeCreated(node, element);
-    }
-
-    // Clear input and hide highlight
-    if (this.input) {
-      this.input.value = "";
-      this.updateStatus("");
-    }
-    this.highlighter.hide();
-    this.currentElements = [];
-  }
-
-  /**
-   * Handles "Ignore" action
-   */
-  private handleIgnore(selector: string, element: Element): void {
-    const node = createExportNode(selector, "ignore");
-
-    console.log(`[Picker] Ignore: ${selector}`);
 
     this.roots.push(node);
     this.updateRootsDisplay();
