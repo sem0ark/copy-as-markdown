@@ -2,9 +2,9 @@ import { resolve } from "node:path";
 import { defineConfig } from "vite";
 
 const entries = {
-  background: resolve(__dirname, "src/background.ts"),
-  content: resolve(__dirname, "src/content.ts"),
-  config: resolve(__dirname, "src/config.ts"),
+  background: resolve(import.meta.dirname, "src/background.ts"),
+  content: resolve(import.meta.dirname, "src/content.ts"),
+  config: resolve(import.meta.dirname, "src/config.ts"),
 };
 
 export default defineConfig(({ mode }) => {
