@@ -4,7 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "build": "vite build",
+    "build": "pnpm build:background && pnpm build:content && pnpm build:config",
+    "build:background": "vite build --mode background",
+    "build:content": "vite build --mode content",
+    "build:config": "vite build --mode config",
     "dev": "vite build --watch",
     "watch": "vite build --watch",
     "test": "vitest run",

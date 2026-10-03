@@ -79,7 +79,7 @@ Simplistic Vanilla TS components injected into the web page.
     - Support for iframe drilling with `>>>` syntax (e.g., `iframe#doc >>> article`)
     - Validates selectors and shows error messages
     - Highlights first matched element if multiple matches
-- **Actions**: Include and Ignore buttons for new roots.
+- **Actions**: Include button for new roots; ignore rules are configured as nested child nodes in the profile.
 - **Control Buttons**: Done (saves and closes), Cancel (discards and closes).
 - **Callbacks**: Provides `onNodeCreated`, `onNodeRemoved`, `onComplete`, and `onCancel` hooks.
 - **Keyboard**: Enter to confirm current selector, ESC to cancel.
@@ -117,6 +117,9 @@ Simplistic Vanilla TS components injected into the web page.
 - **Access**: Opens in new tab via context menu "Open Configuration Editor".
 - **Features**:
   - Direct JSON editing with validation
+  - Internal IDs and timestamps are hidden from the editable/preview representation
+  - Missing IDs and timestamps are generated in the background before storage
+  - Root and child selectors/actions are validated before storage
   - Import/Export configuration files
   - Minimal dark theme, monospace editor
   - Real-time validation on save
